@@ -377,6 +377,8 @@ export async function getAllTags(): Promise<SelectProperty[]> {
 }
 
 export async function downloadFile(url: URL) {
+  console.log("urlは : " + url)
+
   let res!: AxiosResponse
   try {
     res = await axios({
@@ -400,7 +402,8 @@ export async function downloadFile(url: URL) {
     fs.mkdirSync(dir)
   }
 
-  const filename = decodeURIComponent(url.pathname.split('/').slice(-1)[0])
+  // const filename = decodeURIComponent(url.pathname.split('/').slice(-1)[0])
+  const filename = "image." + decodeURIComponent(url.pathname.split('/').slice(-1)[0]).split('.').slice(-1)[0]
   const filepath = `${dir}/${filename}`
 
   const writeStream = createWriteStream(filepath)
