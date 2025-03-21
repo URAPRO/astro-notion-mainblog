@@ -31,10 +31,10 @@
     "exif-be-gone": "^1.5.1",
     "katex": "^0.16.19",
     "mermaid": "^11.4.1",
-    "metascraper": "^4.8.5",
-    "metascraper-description": "^4.8.5",
-    "metascraper-image": "^4.8.5",
-    "metascraper-title": "^4.8.5",
+    "metascraper": "^5.46.9",
+    "metascraper-description": "^5.46.5",
+    "metascraper-image": "^5.46.5",
+    "metascraper-title": "^5.46.5",
     "prismjs": "^1.29.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -78,5 +78,8 @@
     "includedScripts": [
       "_fetch-notion-blocks"
     ]
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "4.6.1"
   }
 }
