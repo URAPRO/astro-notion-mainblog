@@ -1,5 +1,5 @@
 ---
-import { Post } from '../../lib/interfaces.ts'
+import type { Post, Emoji, FileObject } from '../../lib/interfaces.ts'
 import { getPostByPageId } from '../../lib/notion/client'
 import { getPostLink } from '../../lib/blog-helpers.ts'
 import '../../styles/notion-color.css'
@@ -11,43 +11,48 @@ export interface Props {
 
 const { pageId } = Astro.props
 
-let post: Post = null
+let post: Post | null = null
 if (pageId) {
   post = await getPostByPageId(pageId)
 }
+
+// Type guard functions
+function isEmoji(icon: FileObject | Emoji | null): icon is Emoji {
+  return icon !== null && icon.Type === 'emoji';
+}
+
+function isFileObject(icon: FileObject | Emoji | null): icon is FileObject {
+  return icon !== null && (icon.Type === 'external' || icon.Type === 'file');
+}
 ---
 
-{
-  post ? (
-    <a href={getPostLink(post)} class="link">
-      <>
-        <span class="icon">
-          {post.Icon && post.Icon.Type === 'emoji' ? (
-            post.Icon.Emoji
-          ) : post.Icon && post.Icon.Type === 'external' ? (
-            <img
-              src={post.Icon.Url}
-              class="notion-icon"
-              alt="Post title icon in a page link"
-            />
-          ) : (
-            '📄'
-          )}
-          <img src={arrow.src} class="icon-link" alt="Arrow icon of a page link" />
-        </span>
-        <span class="text">{post.Title}</span>
-      </>
-    </a>
-  ) : (
-    <a class="link">
-      <span class="icon">
-        🚫
-        <img src={arrow.src} class="icon-link" alt="Arrow icon of a page link" />
-      </span>
-      <span class="text not-found">Post not found</span>
-    </a>
-  )
-}
+{post ? (
+  <a href={getPostLink(post)} class="link">
+    <span class="icon">
+      {isEmoji(post.Icon) ? (
+        <span class="emoji-icon">{post.Icon.Emoji}</span>
+      ) : isFileObject(post.Icon) ? (
+        <img
+          src={post.Icon.Url}
+          class="notion-icon"
+          alt="Post title icon in a page link"
+        />
+      ) : (
+        '📄'
+      )}
+      <img src={arrow.src} class="icon-link" alt="Arrow icon of a page link" />
+    </span>
+    <span class="text">{post.Title}</span>
+  </a>
+) : (
+  <a class="link">
+    <span class="icon">
+      🚫
+      <img src={arrow.src} class="icon-link" alt="Arrow icon of a page link" />
+    </span>
+    <span class="text not-found">Post not found</span>
+  </a>
+)}
 
 <style>
   a.link {
@@ -60,12 +65,16 @@ if (pageId) {
     flex-shrink: 0;
     position: relative;
   }
+  span.icon .emoji-icon {
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+  }
   span.icon img.notion-icon {
     width: 1.3em;
     height: 1.3rem;
     vertical-align: sub;
     flex-shrink: 0;
     position: relative;
+    object-fit: contain;
   }
   span.icon img.icon-link {
     display: block;
