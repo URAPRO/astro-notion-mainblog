@@ -1,5 +1,5 @@
 ---
-import { Post } from '../lib/interfaces.ts'
+import type { Post, Emoji, FileObject } from '../lib/interfaces.ts'
 import { getPostLink } from '../lib/blog-helpers.ts'
 import NoContents from './NoContents.astro'
 
@@ -9,6 +9,15 @@ export interface Props {
 }
 
 const { heading, posts } = Astro.props
+
+// Type guard functions
+function isEmoji(icon: FileObject | Emoji | null): icon is Emoji {
+  return icon !== null && icon.Type === 'emoji';
+}
+
+function isFileObject(icon: FileObject | Emoji | null): icon is FileObject {
+  return icon !== null && (icon.Type === 'external' || icon.Type === 'file');
+}
 ---
 
 <div class="blog-posts-link">
@@ -22,14 +31,14 @@ const { heading, posts } = Astro.props
           <li>
             <a
               href={getPostLink(post)}
-              title={`${post.Icon?.Emoji || ''}${post.Title}`}
+              title={`${isEmoji(post.Icon) ? post.Icon.Emoji : ''}${post.Title}`}
             >
-              {post.Icon && post.Icon.Type === 'emoji' ? (
+              {isEmoji(post.Icon) ? (
                 <>
-                  <span>{post.Icon.Emoji}</span>
+                  <span class="emoji-icon">{post.Icon.Emoji}</span>
                   {post.Title}
                 </>
-              ) : post.Icon && post.Icon.Type === 'external' ? (
+              ) : isFileObject(post.Icon) ? (
                 <>
                   <img
                     src={post.Icon.Url}
@@ -86,9 +95,14 @@ const { heading, posts } = Astro.props
     display: inline-block;
     margin-right: 0.2rem;
   }
+  .blog-posts-link ul li a span.emoji-icon {
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+    font-size: 1.25rem;
+  }
   .blog-posts-link ul li a img {
     width: 1.25rem;
     height: 1.25rem;
     vertical-align: sub;
+    object-fit: contain;
   }
 </style>

@@ -1,5 +1,5 @@
 ---
-import { Post } from '../lib/interfaces.ts'
+import type { Post, Emoji, FileObject } from '../lib/interfaces.ts'
 import { getPostLink } from '../lib/blog-helpers.ts'
 
 export interface Props {
@@ -10,18 +10,27 @@ export interface Props {
 const { post, enableLink = true } = Astro.props
 
 let title = post.Title
+
+// Type guard functions
+function isEmoji(icon: FileObject | Emoji | null): icon is Emoji {
+  return icon !== null && icon.Type === 'emoji';
+}
+
+function isFileObject(icon: FileObject | Emoji | null): icon is FileObject {
+  return icon !== null && (icon.Type === 'external' || icon.Type === 'file');
+}
 ---
 
 <h2 class="post-title">
   {
     enableLink ? (
       <a href={getPostLink(post)}>
-        {post.Icon && post.Icon.Type === 'emoji' ? (
+        {isEmoji(post.Icon) ? (
           <>
-            <span>{post.Icon.Emoji}</span>
+            <span class="emoji-icon">{post.Icon.Emoji}</span>
             {title}
           </>
-        ) : post.Icon && post.Icon.Type === 'external' ? (
+        ) : isFileObject(post.Icon) ? (
           <>
             <img src={post.Icon.Url} alt="Post title icon" />
             {title}
@@ -32,12 +41,12 @@ let title = post.Title
       </a>
     ) : (
       <>
-        {post.Icon && post.Icon.Type === 'emoji' ? (
+        {isEmoji(post.Icon) ? (
           <>
-            <span>{post.Icon.Emoji}</span>
+            <span class="emoji-icon">{post.Icon.Emoji}</span>
             {title}
           </>
-        ) : post.Icon && post.Icon.Type === 'external' ? (
+        ) : isFileObject(post.Icon) ? (
           <>
             <img src={post.Icon.Url} alt="Post title icon" />
             {title}
@@ -67,13 +76,15 @@ let title = post.Title
     display: inline-block;
     margin-right: 0.2em;
   }
-  .post-title span {
+  .post-title span.emoji-icon {
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
     font-size: 1.2em;
   }
   .post-title img {
     width: 1.3em;
     height: 1.3em;
     vertical-align: sub;
+    object-fit: contain;
   }
   @media (max-width: 640px) {
     .post-title {

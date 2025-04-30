@@ -944,14 +944,31 @@ function _buildPost(pageObject: responses.PageObject): Post {
         Type: pageObject.icon.type,
         Url: pageObject.icon.external?.url || '',
       }
+    } else if (
+      pageObject.icon.type === 'file' &&
+      'file' in pageObject.icon
+    ) {
+      icon = {
+        Type: pageObject.icon.type,
+        Url: pageObject.icon.file?.url || '',
+        ExpiryTime: pageObject.icon.file?.expiry_time,
+      }
     }
   }
 
   let cover: FileObject | null = null
   if (pageObject.cover) {
-    cover = {
-      Type: pageObject.cover.type,
-      Url: pageObject.cover.external?.url || '',
+    if (pageObject.cover.type === 'external' && 'external' in pageObject.cover) {
+      cover = {
+        Type: pageObject.cover.type,
+        Url: pageObject.cover.external?.url || '',
+      }
+    } else if (pageObject.cover.type === 'file' && 'file' in pageObject.cover) {
+      cover = {
+        Type: pageObject.cover.type,
+        Url: pageObject.cover.file?.url || '',
+        ExpiryTime: pageObject.cover.file?.expiry_time,
+      }
     }
   }
 
