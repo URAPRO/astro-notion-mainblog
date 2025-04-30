@@ -137,12 +137,29 @@ const bookmarkURLMap = await buildURLToHTMLMap(bookmarkURLs)
         if(typeof block.Code.Caption[0] !== "undefined") {
           if(block.Code.Caption[0].PlainText === 'Amazon') {
             try {
-              const url = new URL(block.Code.RichTexts[0].PlainText.trim());
+              const lines = block.Code.RichTexts[0].PlainText.trim().split('\n');
+              
+              const urlString = lines[0].trim();
+              const url = new URL(urlString);
+              
               if (isAmazonURL(url)) {
-                return <AmazonCard url={url} />
+                const productInfo = {};
+                
+                for (let i = 1; i < lines.length; i++) {
+                  const line = lines[i].trim();
+                  if (line.startsWith('title:')) {
+                    productInfo.title = line.substring(6).trim();
+                  } else if (line.startsWith('price:')) {
+                    productInfo.price = line.substring(6).trim();
+                  } else if (line.startsWith('updatedAt:')) {
+                    productInfo.updatedAt = line.substring(10).trim();
+                  }
+                }
+                
+                return <AmazonCard url={url} {...productInfo} />
               }
             } catch (e) {
-              console.error('Invalid Amazon URL', e);
+              console.error('Invalid Amazon URL or format', e);
             }
           }
           else if(block.Code.Caption[0].PlainText.indexOf('htmlblock') !== -1) {
