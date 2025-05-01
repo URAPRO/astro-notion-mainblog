@@ -128,6 +128,17 @@ export async function getAllPosts(): Promise<Post[]> {
     params['start_cursor'] = res.next_cursor as string
   }
 
+  for (const pageObject of results) {
+    if (pageObject.icon && pageObject.icon.type === 'file' && 'file' in pageObject.icon && pageObject.icon.file?.url) {
+      try {
+        const url = new URL(pageObject.icon.file.url)
+        await downloadFile(url)
+      } catch (err) {
+        console.error(`Failed to download icon file: ${err}`)
+      }
+    }
+  }
+
   postsCache = results
     .filter((pageObject) => _validPageObject(pageObject))
     .map((pageObject) => _buildPost(pageObject))
