@@ -67,6 +67,18 @@ export async function fetchAmazonProductInfo(url: URL): Promise<AmazonProductInf
     // タイトルを抽出
     const titleMatch = html.match(/<span id="productTitle"[^>]*>([^<]+)<\/span>/);
     const title = titleMatch ? titleMatch[1].trim() : '';
+
+    // 品切れかどうかを判定
+    const isOutOfStock = html.includes('この商品は現在お取り扱いできません') ||
+                        html.includes('現在在庫切れです');
+    
+    if (isOutOfStock) {
+      return {
+        title,
+        price: '品切れ',
+        updatedAt: `${new Date().getFullYear()}年${new Date().getMonth() + 1}月${new Date().getDate()}日現在`
+      };
+    }
     
     // 価格を抽出
     const priceMatch = html.match(/id="priceblock_ourprice"[^>]*>([^<]+)</) || 
@@ -88,7 +100,7 @@ export async function fetchAmazonProductInfo(url: URL): Promise<AmazonProductInf
 // URLからASINを抽出
 export function extractASIN(url: URL): string | null {
   try {
-    const match = url.pathname.match(/\/dp\/([A-Z0-9]{10})/);
+    const match = url.pathname.match(/\/(?:dp|ASIN)\/([A-Z0-9]{10})/);
     if (match && match[1]) {
       return match[1];
     }
