@@ -20,8 +20,9 @@ if (import.meta.env.SSR && asin) {
     // キャッシュから商品情報を取得
     productInfo = await getCachedProductInfo(asin);
     
-    // キャッシュになく、かつ手動設定もない場合はAmazonから取得
-    if (!productInfo && !manualTitle && !manualPrice) {
+    console.log(asin + "の情報は" + productInfo);
+    // キャッシュになく、すべての手動情報が揃ってない場合はAmazonから取得
+    if (!productInfo && (!manualTitle && !manualPrice && !updatedAt)) {
       console.log(`Fetching Amazon product info for ASIN: ${asin}`);
       productInfo = await fetchAmazonProductInfo(url);
       if (productInfo) {
