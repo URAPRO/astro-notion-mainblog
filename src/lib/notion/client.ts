@@ -128,6 +128,17 @@ export async function getAllPosts(): Promise<Post[]> {
     params['start_cursor'] = res.next_cursor as string
   }
 
+  for (const pageObject of results) {
+    if (pageObject.icon && pageObject.icon.type === 'file' && 'file' in pageObject.icon && pageObject.icon.file?.url) {
+      try {
+        const url = new URL(pageObject.icon.file.url)
+        await downloadFile(url)
+      } catch (err) {
+        console.error(`Failed to download icon file: ${err}`)
+      }
+    }
+  }
+
   postsCache = results
     .filter((pageObject) => _validPageObject(pageObject))
     .map((pageObject) => _buildPost(pageObject))
@@ -380,6 +391,7 @@ export async function getAllTags(): Promise<SelectProperty[]> {
 export async function downloadFile(url: URL) {
   let res!: AxiosResponse
   try {
+    console.log(`Downloading file from: ${url.toString()}`)
     res = await axios({
       method: 'get',
       url: url.toString(),
@@ -387,22 +399,24 @@ export async function downloadFile(url: URL) {
       responseType: 'stream',
     })
   } catch (err) {
-    console.log(err)
+    console.error(`Failed to download file: ${err}`)
     return Promise.resolve()
   }
 
   if (!res || res.status != 200) {
-    console.log(res)
+    console.error(`Failed to download file. Status: ${res?.status}`)
     return Promise.resolve()
   }
 
   const dir = './public/notion/' + url.pathname.split('/').slice(-2)[0]
   if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir)
+    console.log(`Creating directory: ${dir}`)
+    fs.mkdirSync(dir, { recursive: true })
   }
 
   const filename = decodeURIComponent(url.pathname.split('/').slice(-1)[0])
   const filepath = `${dir}/${filename}`
+  console.log(`Saving file to: ${filepath}`)
 
   const writeStream = createWriteStream(filepath)
   const rotate = sharp().rotate()
@@ -413,9 +427,10 @@ export async function downloadFile(url: URL) {
     stream = stream.pipe(rotate)
   }
   try {
-    return pipeline(stream, new ExifTransformer(), writeStream)
+    await pipeline(stream, new ExifTransformer(), writeStream)
+    console.log(`File saved successfully: ${filepath}`)
   } catch (err) {
-    console.log(err)
+    console.error(`Failed to save file: ${err}`)
     writeStream.end()
     return Promise.resolve()
   }
@@ -948,9 +963,12 @@ function _buildPost(pageObject: responses.PageObject): Post {
       pageObject.icon.type === 'file' &&
       'file' in pageObject.icon
     ) {
+      const url = new URL(pageObject.icon.file?.url || '')
+      const filename = decodeURIComponent(url.pathname.split('/').slice(-1)[0])
+      const dir = url.pathname.split('/').slice(-2)[0]
       icon = {
         Type: pageObject.icon.type,
-        Url: pageObject.icon.file?.url || '',
+        Url: `/notion/${dir}/${filename}`,
         ExpiryTime: pageObject.icon.file?.expiry_time,
       }
     }
