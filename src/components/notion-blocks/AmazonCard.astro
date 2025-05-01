@@ -1,4 +1,6 @@
 ---
+import { extractASIN, getCachedProductInfo, fetchAmazonProductInfo, cacheProductInfo } from '../../lib/amazon-cache';
+
 export interface Props {
   url: URL;
   title?: string;     // オプションの商品タイトル
@@ -8,60 +10,35 @@ export interface Props {
 
 const { url, title: manualTitle = '', price: manualPrice = '', updatedAt = '' } = Astro.props;
 
-// 現在の日付を取得（更新日が指定されていない場合）
-const today = new Date();
-const formattedDate = updatedAt || `${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日現在`;
-
 // URLからASINを抽出
-let asin = '';
-try {
-  const match = url.pathname.match(/\/dp\/([A-Z0-9]{10})/);
-  if (match && match[1]) {
-    asin = match[1];
-  } else {
-    asin = url.searchParams.get('ASIN') || url.searchParams.get('asin') || '';
-  }
-} catch (e) {
-  console.error('Error extracting ASIN:', e);
-}
+const asin = extractASIN(url);
 
-// Amazonから商品情報を取得する（サーバーサイドのみで実行）
-let amazonTitle = '';
-let amazonPrice = '';
-
+// 商品情報を取得
+let productInfo = null;
 if (import.meta.env.SSR && asin) {
   try {
-    const response = await fetch(url.toString(), {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-      }
-    });
+    // キャッシュから商品情報を取得
+    productInfo = await getCachedProductInfo(asin);
     
-    if (response.ok) {
-      const html = await response.text();
-      
-      // タイトルを抽出
-      const titleMatch = html.match(/<span id="productTitle"[^>]*>([^<]+)<\/span>/);
-      if (titleMatch && titleMatch[1]) {
-        amazonTitle = titleMatch[1].trim();
-      }
-      
-      // 価格を抽出
-      const priceMatch = html.match(/id="priceblock_ourprice"[^>]*>([^<]+)</) || 
-                         html.match(/id="price_inside_buybox"[^>]*>([^<]+)</) ||
-                         html.match(/<span class="a-price-whole">([^<]+)<\/span>/);
-      if (priceMatch && priceMatch[1]) {
-        amazonPrice = `¥${priceMatch[1].trim().replace(/[^\d]/g, ',')}`;
+    // キャッシュになく、かつ手動設定もない場合はAmazonから取得
+    if (!productInfo && !manualTitle && !manualPrice) {
+      console.log(`Fetching Amazon product info for ASIN: ${asin}`);
+      productInfo = await fetchAmazonProductInfo(url);
+      if (productInfo) {
+        console.log(`Caching Amazon product info for ASIN: ${asin}`);
+        // 取得した情報をキャッシュに保存
+        await cacheProductInfo(asin, productInfo);
       }
     }
   } catch (error) {
-    console.error('Error fetching Amazon product info:', error);
+    console.error('Error processing Amazon product info:', error);
   }
 }
 
-// 手動設定とAmazonから取得した情報を組み合わせる
-const title = manualTitle || amazonTitle || "Amazon商品を見る";
-const price = manualPrice || amazonPrice || "";
+// 手動設定、キャッシュ、Amazonから取得した情報を組み合わせる
+const title = manualTitle || (productInfo?.title || "Amazon商品を見る");
+const price = manualPrice || (productInfo?.price || "");
+const formattedDate = updatedAt || (productInfo?.updatedAt || "");
 ---
 
 <div class="amazon-card">
