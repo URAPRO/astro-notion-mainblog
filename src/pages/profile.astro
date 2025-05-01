@@ -1,0 +1,39 @@
+---
+import * as interfaces from "../lib/interfaces.ts";
+import { getPostBySlug, getAllBlocksByBlockId } from "../lib/notion/client.ts";
+import { getPostLink } from "../lib/blog-helpers.ts";
+import Layout from "../layouts/Layout.astro";
+import PostTitle from "../components/PostTitle.astro";
+import PostFeaturedImage from "../components/PostFeaturedImage.astro";
+import PostBody from "../components/PostBody.astro";
+import styles from "../styles/blog.module.css";
+
+const slug = "profile";
+
+const post = await getPostBySlug(slug);
+if (!post) {
+  Astro.redirect("/404");
+}
+
+// postがnullでないことを確認したので、型アサーションを使用
+const typedPost = post as interfaces.Post;
+
+const [blocks] = await Promise.all([getAllBlocksByBlockId(typedPost.PageId)]);
+
+const description = typedPost.Excerpt || "";
+const ogImage = typedPost.FeaturedImage?.Url || "";
+---
+
+<Layout 
+  title={typedPost.Title} 
+  path={getPostLink(typedPost)}
+  description={description}
+  ogImage={ogImage}
+>
+  <div slot="main" class={styles.main}>
+    <div class={styles.post}>
+      <PostTitle post={typedPost} enableLink={false} />
+      <PostBody blocks={blocks} />
+    </div>
+  </div>
+</Layout> 

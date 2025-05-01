@@ -143,6 +143,12 @@ if (database.Icon && database.Icon.Type === 'file') {
 
         <aside>
           <SearchButton />
+          <div class="profile-link">
+            <a href={getNavLink('/profile')}>
+              <img src={customIconURL} alt="Profile icon" class="profile-icon" />
+              <span>プロフィール</span>
+            </a>
+          </div>
           <slot name="aside" />
         </aside>
       </div>
@@ -275,6 +281,25 @@ if (database.Icon && database.Icon.Type === 'file') {
   main footer a {
     color: inherit;
     text-decoration: underline;
+  }
+
+  .profile-link {
+    margin: 20px 0;
+  }
+  .profile-link a {
+    display: flex;
+    align-items: center;
+    color: #333;
+    text-decoration: none;
+  }
+  .profile-link a:hover {
+    text-decoration: underline;
+  }
+  .profile-icon {
+    width: 24px;
+    height: 24px;
+    margin-right: 8px;
+    border-radius: 50%;
   }
 </style>
 
