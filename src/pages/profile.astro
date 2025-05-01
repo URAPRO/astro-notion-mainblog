@@ -1,11 +1,13 @@
 ---
 import * as interfaces from "../lib/interfaces.ts";
-import { getPostBySlug, getAllBlocksByBlockId } from "../lib/notion/client.ts";
+import { getPostBySlug, getAllBlocksByBlockId, getPosts, getRankedPosts, getAllTags } from "../lib/notion/client.ts";
 import { getPostLink } from "../lib/blog-helpers.ts";
 import Layout from "../layouts/Layout.astro";
 import PostTitle from "../components/PostTitle.astro";
 import PostFeaturedImage from "../components/PostFeaturedImage.astro";
 import PostBody from "../components/PostBody.astro";
+import BlogPostsLink from "../components/BlogPostsLink.astro";
+import BlogTagsLink from "../components/BlogTagsLink.astro";
 import styles from "../styles/blog.module.css";
 
 const slug = "profile";
@@ -18,7 +20,12 @@ if (!post) {
 // postがnullでないことを確認したので、型アサーションを使用
 const typedPost = post as interfaces.Post;
 
-const [blocks] = await Promise.all([getAllBlocksByBlockId(typedPost.PageId)]);
+const [blocks, recentPosts, rankedPosts, tags] = await Promise.all([
+  getAllBlocksByBlockId(typedPost.PageId),
+  getPosts(5),
+  getRankedPosts(5),
+  getAllTags(),
+]);
 
 const description = typedPost.Excerpt || "";
 const ogImage = typedPost.FeaturedImage?.Url || "";
@@ -35,5 +42,11 @@ const ogImage = typedPost.FeaturedImage?.Url || "";
       <PostTitle post={typedPost} enableLink={false} />
       <PostBody blocks={blocks} />
     </div>
+  </div>
+
+  <div slot="aside" class={styles.aside}>
+    <BlogPostsLink heading="最新記事" posts={recentPosts} />
+    <BlogPostsLink heading="おすすめ記事" posts={rankedPosts} />
+    <BlogTagsLink heading="カテゴリー" tags={tags} />
   </div>
 </Layout> 
