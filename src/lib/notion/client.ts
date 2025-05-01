@@ -963,9 +963,12 @@ function _buildPost(pageObject: responses.PageObject): Post {
       pageObject.icon.type === 'file' &&
       'file' in pageObject.icon
     ) {
+      const url = new URL(pageObject.icon.file?.url || '')
+      const filename = decodeURIComponent(url.pathname.split('/').slice(-1)[0])
+      const dir = url.pathname.split('/').slice(-2)[0]
       icon = {
         Type: pageObject.icon.type,
-        Url: pageObject.icon.file?.url || '',
+        Url: `/notion/${dir}/${filename}`,
         ExpiryTime: pageObject.icon.file?.expiry_time,
       }
     }
