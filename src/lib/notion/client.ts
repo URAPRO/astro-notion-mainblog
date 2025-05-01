@@ -391,6 +391,7 @@ export async function getAllTags(): Promise<SelectProperty[]> {
 export async function downloadFile(url: URL) {
   let res!: AxiosResponse
   try {
+    console.log(`Downloading file from: ${url.toString()}`)
     res = await axios({
       method: 'get',
       url: url.toString(),
@@ -398,22 +399,24 @@ export async function downloadFile(url: URL) {
       responseType: 'stream',
     })
   } catch (err) {
-    console.log(err)
+    console.error(`Failed to download file: ${err}`)
     return Promise.resolve()
   }
 
   if (!res || res.status != 200) {
-    console.log(res)
+    console.error(`Failed to download file. Status: ${res?.status}`)
     return Promise.resolve()
   }
 
   const dir = './public/notion/' + url.pathname.split('/').slice(-2)[0]
   if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir)
+    console.log(`Creating directory: ${dir}`)
+    fs.mkdirSync(dir, { recursive: true })
   }
 
   const filename = decodeURIComponent(url.pathname.split('/').slice(-1)[0])
   const filepath = `${dir}/${filename}`
+  console.log(`Saving file to: ${filepath}`)
 
   const writeStream = createWriteStream(filepath)
   const rotate = sharp().rotate()
@@ -424,9 +427,10 @@ export async function downloadFile(url: URL) {
     stream = stream.pipe(rotate)
   }
   try {
-    return pipeline(stream, new ExifTransformer(), writeStream)
+    await pipeline(stream, new ExifTransformer(), writeStream)
+    console.log(`File saved successfully: ${filepath}`)
   } catch (err) {
-    console.log(err)
+    console.error(`Failed to save file: ${err}`)
     writeStream.end()
     return Promise.resolve()
   }
