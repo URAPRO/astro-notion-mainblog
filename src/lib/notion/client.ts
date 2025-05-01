@@ -145,13 +145,20 @@ export async function getAllPosts(): Promise<Post[]> {
   return postsCache
 }
 
-export async function getPosts(pageSize = 10): Promise<Post[]> {
+// 記事一覧用の新しい関数
+export async function getAllBlogPosts(): Promise<Post[]> {
   const allPosts = await getAllPosts()
+  return allPosts.filter(post => post.Slug !== 'profile')
+}
+
+// 既存の関数を新しい関数を使用するように更新
+export async function getPosts(pageSize = 10): Promise<Post[]> {
+  const allPosts = await getAllBlogPosts()
   return allPosts.slice(0, pageSize)
 }
 
 export async function getRankedPosts(pageSize = 10): Promise<Post[]> {
-  const allPosts = await getAllPosts()
+  const allPosts = await getAllBlogPosts()
   return allPosts
     .filter((post) => !!post.Rank)
     .sort((a, b) => {
@@ -181,7 +188,7 @@ export async function getPostsByTag(
 ): Promise<Post[]> {
   if (!tagName) return []
 
-  const allPosts = await getAllPosts()
+  const allPosts = await getAllBlogPosts()
   return allPosts
     .filter((post) => post.Tags.find((tag) => tag.name === tagName))
     .slice(0, pageSize)
@@ -193,7 +200,7 @@ export async function getPostsByPage(page: number): Promise<Post[]> {
     return []
   }
 
-  const allPosts = await getAllPosts()
+  const allPosts = await getAllBlogPosts()
 
   const startIndex = (page - 1) * NUMBER_OF_POSTS_PER_PAGE
   const endIndex = startIndex + NUMBER_OF_POSTS_PER_PAGE
@@ -210,7 +217,7 @@ export async function getPostsByTagAndPage(
     return []
   }
 
-  const allPosts = await getAllPosts()
+  const allPosts = await getAllBlogPosts()
   const posts = allPosts.filter((post) =>
     post.Tags.find((tag) => tag.name === tagName)
   )
@@ -222,7 +229,7 @@ export async function getPostsByTagAndPage(
 }
 
 export async function getNumberOfPages(): Promise<number> {
-  const allPosts = await getAllPosts()
+  const allPosts = await getAllBlogPosts()
   return (
     Math.floor(allPosts.length / NUMBER_OF_POSTS_PER_PAGE) +
     (allPosts.length % NUMBER_OF_POSTS_PER_PAGE > 0 ? 1 : 0)
@@ -230,7 +237,7 @@ export async function getNumberOfPages(): Promise<number> {
 }
 
 export async function getNumberOfPagesByTag(tagName: string): Promise<number> {
-  const allPosts = await getAllPosts()
+  const allPosts = await getAllBlogPosts()
   const posts = allPosts.filter((post) =>
     post.Tags.find((tag) => tag.name === tagName)
   )
@@ -932,6 +939,8 @@ async function _getSyncedBlockChildren(block: Block): Promise<Block[]> {
 
 function _validPageObject(pageObject: responses.PageObject): boolean {
   const prop = pageObject.properties
+  if (!prop) return false
+
   return (
     !!prop.Page.title &&
     prop.Page.title.length > 0 &&
