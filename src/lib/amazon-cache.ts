@@ -8,7 +8,7 @@ interface AmazonProductInfo {
 }
 
 // distディレクトリ内にキャッシュディレクトリを作成
-const CACHE_DIR = path.join(process.cwd(), 'dist', '.amazon-cache');
+const CACHE_DIR = path.join(process.cwd(), 'public', 'notion', '.amazon-cache');
 
 // キャッシュディレクトリの作成
 async function ensureCacheDir() {
