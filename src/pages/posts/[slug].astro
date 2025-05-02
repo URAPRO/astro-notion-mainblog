@@ -98,18 +98,18 @@ if (post.FeaturedImage && post.FeaturedImage.Url) {
 
 <Layout
   title={post.Title}
-  description={post.Excerpt}
   path={getPostLink(post)}
+  description={post.Excerpt}
   ogImage={ogImage}
 >
-  <div slot="main" class={styles.main}>
+  <div slot="main" class={`${styles.main} post-page`}>
     <div class={styles.post}>
       <PostTitle post={post} enableLink={false} />
       <div style="display: flex; flex-wrap: wrap; column-gap: 1em;">
         <PostDate post={post} />
         <PostUpdateDate post={post} />
       </div>
-      <PostTags post={post} />
+      <PostTags post={post} enableLink={true} />
       <SocialShareButtons title={post.Title} url={getPostFullLink(post)} client:load/>
       <PostBody blocks={blocks} />
 
