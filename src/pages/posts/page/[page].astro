@@ -46,7 +46,7 @@ const [posts, recentPosts, rankedPosts, tags, numberOfPages] = await Promise.all
   description=""
   ogImage=""
 >
-  <div slot="main" class={`${styles.main} posts-page`}>
+  <div slot="main" class={`${styles.main} ${styles.postsPage}`}>
     <header>
       <div class="page-container">{page}/{numberOfPages}</div>
     </header>
@@ -56,7 +56,7 @@ const [posts, recentPosts, rankedPosts, tags, numberOfPages] = await Promise.all
         <NoContents contents={posts} />
       ) : (
         posts.map((post) => (
-          <div class={styles.post}>
+          <div class={styles.post} data-post-slug={post.Slug}>
             <div class={styles.postDetail}>
               <div class={styles.postDetailLeft}>
                 <PostFeaturedImage post={post} enableLink={false} />
