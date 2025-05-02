@@ -50,18 +50,6 @@ function isFileObject(icon: FileObject | Emoji | null): icon is FileObject {
     font-size: 1.1rem;
     line-height: 1.4;
   }
-  .titleText {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  .icon {
-    margin-right: 0.5em;
-    width: 1rem;
-    height: 1rem;
-    vertical-align: -0.1em;
-  }
   a {
     color: inherit;
     text-decoration: none;
@@ -69,10 +57,7 @@ function isFileObject(icon: FileObject | Emoji | null): icon is FileObject {
   a:hover {
     text-decoration: underline;
   }
-  /* indexページのカードでのみ小さいサイズを適用 */
-  :global(.postsPage) .title {
-    font-size: 0.95rem;
-  }
+ 
   .titleContent {
     display: flex;
     align-items: center;
