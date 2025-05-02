@@ -1,15 +1,14 @@
 ---
 import type { Post, Emoji, FileObject } from '../lib/interfaces.ts'
 import { getPostLink } from '../lib/blog-helpers.ts'
+import styles from '../styles/blog.module.css'
 
 export interface Props {
   post: Post
   enableLink: boolean
 }
 
-const { post, enableLink = true } = Astro.props
-
-let title = post.Title
+const { post, enableLink } = Astro.props
 
 // Type guard functions
 function isEmoji(icon: FileObject | Emoji | null): icon is Emoji {
@@ -21,77 +20,47 @@ function isFileObject(icon: FileObject | Emoji | null): icon is FileObject {
 }
 ---
 
-<h2 class="post-title">
-  {
-    enableLink ? (
-      <a href={getPostLink(post)}>
+<h2 class={styles.title}>
+  {enableLink ? (
+    <a href={getPostLink(post)} target={post.ExternalLink ? "_blank" : undefined}>
+      <span class={styles.titleContent}>
         {isEmoji(post.Icon) ? (
-          <>
-            <span class="emoji-icon">{post.Icon.Emoji}</span>
-            {title}
-          </>
+          <span class={styles.icon}>{post.Icon.Emoji}</span>
         ) : isFileObject(post.Icon) ? (
-          <>
-            <img src={post.Icon.Url} alt="Post title icon" />
-            {title}
-          </>
-        ) : (
-          title
-        )}
-      </a>
-    ) : (
-      <>
-        {isEmoji(post.Icon) ? (
-          <>
-            <span class="emoji-icon">{post.Icon.Emoji}</span>
-            {title}
-          </>
-        ) : isFileObject(post.Icon) ? (
-          <>
-            <img src={post.Icon.Url} alt="Post title icon" />
-            {title}
-          </>
-        ) : (
-          title
-        )}
-      </>
-    )
-  }
+          <img src={post.Icon.Url} alt="Post title icon" class={styles.icon} />
+        ) : null}
+        <span class={styles.titleText}>{post.Title}</span>
+      </span>
+    </a>
+  ) : (
+    <span class={styles.titleContent}>
+      {isEmoji(post.Icon) ? (
+        <span class={styles.icon}>{post.Icon.Emoji}</span>
+      ) : isFileObject(post.Icon) ? (
+        <img src={post.Icon.Url} alt="Post title icon" class={styles.icon} />
+      ) : null}
+      <span class={styles.titleText}>{post.Title}</span>
+    </span>
+  )}
 </h2>
 
 <style>
-  .post-title {
+  .title {
     margin: 0;
-    padding: 0.2rem 0;
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--fg);
+    font-size: 1.1rem;
+    line-height: 1.4;
   }
-  .post-title a {
-    font-size: 1.6rem;
+  a {
     color: inherit;
+    text-decoration: none;
   }
-  .post-title span,
-  .post-title img {
-    display: inline-block;
-    margin-right: 0.2em;
+  a:hover {
+    text-decoration: underline;
   }
-  .post-title span.emoji-icon {
-    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
-    font-size: 1.2em;
-  }
-  .post-title img {
-    width: 1.3em;
-    height: 1.3em;
-    vertical-align: sub;
-    object-fit: contain;
-  }
-  @media (max-width: 640px) {
-    .post-title {
-      font-size: 1.4rem;
-    }
-    .post-title a {
-      font-size: 1.2rem;
-    }
+ 
+  .titleContent {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
   }
 </style>

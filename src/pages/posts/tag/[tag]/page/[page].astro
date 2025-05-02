@@ -15,8 +15,6 @@ import PostUpdateDate from '../../../../../components/PostUpdateDate.astro'
 import PostTags from '../../../../../components/PostTags.astro'
 import PostTitle from '../../../../../components/PostTitle.astro'
 import PostFeaturedImage from '../../../../../components/PostFeaturedImage.astro'
-import PostExcerpt from '../../../../../components/PostExcerpt.astro'
-import ReadMoreLink from '../../../../../components/ReadMoreLink.astro'
 import Pagination from '../../../../../components/Pagination.astro'
 import BlogPostsLink from '../../../../../components/BlogPostsLink.astro'
 import BlogTagsLink from '../../../../../components/BlogTagsLink.astro'
@@ -26,8 +24,7 @@ import '../../../../../styles/notion-color.css'
 
 export async function getStaticPaths() {
   const allTags = await getAllTags()
-
-  let params = []
+  const params: { params: { tag: string; page: string } }[] = []
 
   await Promise.all(
     allTags.map((tag: SelectProperty) => {
@@ -52,17 +49,19 @@ const [posts, recentPosts, rankedPosts, tags, numberOfPages] = await Promise.all
   getNumberOfPagesByTag(tag),
 ])
 
-const currentTag = posts[0].Tags.find((t) => t.name === tag)
+const currentTag = posts[0]?.Tags.find((t) => t.name === tag)
 ---
 
 <Layout
   title={`Posts in ${tag} ${page}/${numberOfPages}`}
   path={`/posts/tag/${tag}/page/${page}`}
+  description=""
+  ogImage=""
 >
-  <div slot="main" class={styles.main}>
+  <div slot="main" class={`${styles.main} ${styles.postsPage}`}>
     <header>
       <div class="tag-container">
-        <span class={`tag ${currentTag.color}`}>{tag}</span>
+        {currentTag && <span class={`tag ${currentTag.color}`}>{tag}</span>}
         {page}/{numberOfPages}
       </div>
     </header>
@@ -72,23 +71,21 @@ const currentTag = posts[0].Tags.find((t) => t.name === tag)
         <NoContents contents={posts} />
       ) : (
         posts.map((post) => (
-          <div class={styles.post} key={post.Slug}>
+          <div class={styles.post} data-post-slug={post.Slug}>
             <div class={styles.postDetail}>
               <div class={styles.postDetailLeft}>
-                <PostFeaturedImage post={post} />
+                <PostFeaturedImage post={post} enableLink={false} />
               </div>
               <div class={styles.postDetailRight}>
-                <PostTitle post={post} />
+                <PostTitle post={post} enableLink={true} />
                 <div class={styles.postDate}>
                   <PostDate post={post} />
                   <PostUpdateDate post={post} />
                 </div>
-                <PostTags post={post} />
+                <PostTags post={post} enableLink={true} />
               </div>
               <a class={styles.postLink} href={getPostLink(post)} target={post.ExternalLink ? "_blank" : undefined}></a>
             </div>
-            <PostExcerpt post={post} />
-            <ReadMoreLink post={post} />
           </div>
         ))
       )
