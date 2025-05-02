@@ -37,7 +37,7 @@ const [posts, recentPosts, rankedPosts, tags, numberOfPages] = await Promise.all
   description=""
   ogImage=""
 >
-  <div slot="main" class={`${styles.main} posts-page`}>
+  <div slot="main" class={`${styles.main} ${styles.postsPage}`}>
     {
       posts.length === 0 ? (
         <NoContents contents={posts} />

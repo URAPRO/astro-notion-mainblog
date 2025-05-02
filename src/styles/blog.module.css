@@ -22,25 +22,24 @@
 }
 /* ページ一覧が1024px以上のときは2列のレイアウトにする */
 @media (min-width: 1024px) {
-  .posts-page.main {
+  .postsPage {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
 /* ポストページのメインコンテンツ幅を調整 */
-.post-page .main {
+.postPage {
   max-width: 800px;
 }
 
-
 /* ホバー効果をindexページのポスト一覧のみに限定 */
-.posts-page .post {
+.postsPage .post {
   margin: 0;
   border-top: none;
   transition: all 0.2s ease-in-out;
   display: contents;
 }
-.posts-page .post:hover {
+.postsPage .post:hover {
   transform: translateY(-2px);
 }
 
@@ -81,7 +80,7 @@
 }
 
 /* ホバー効果をindexページのポスト一覧のみに限定 */
-.posts-page .postDetail:hover {
+.postsPage .postDetail:hover {
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
   border-color: #e5e5e5;
 }
@@ -132,7 +131,7 @@
     padding-right: 0;
   }
 
-  .post-page .main {
+  .postPage .main {
     padding: 0 1rem;
   }
 }
