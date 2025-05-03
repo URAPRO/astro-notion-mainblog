@@ -6,6 +6,7 @@ import '../styles/syntax-coloring.css'
 import GoogleAnalytics from '../components/GoogleAnalytics.astro'
 import SearchModal from '../components/SearchModal.astro'
 import SearchButton from '../components/SearchButton.astro'
+import ProfileSidebar from '../components/ProfileSidebar.astro'
 
 export interface Props {
   title: string
@@ -155,12 +156,7 @@ if (profilePost?.FeaturedImage?.Url) {
 
         <aside>
           <SearchButton />
-          <div class="profile-link">
-            <a href={getNavLink('/profile')}>
-              <img src={profileIconURL} alt="Profile icon" class="profile-icon" />
-              <span>プロフィール</span>
-            </a>
-          </div>
+          <ProfileSidebar profileIconURL={profileIconURL} />
           <slot name="aside" />
         </aside>
       </div>
@@ -208,9 +204,8 @@ if (profilePost?.FeaturedImage?.Url) {
     width: 250px;
     padding: 35px 20px;
     background-color: #eee3c9;
-    position: sticky;
-    top: 0;
-    height: 100vh;
+    position: relative;
+    height: auto;
   }
   @media (max-width: 640px) {
     aside {
