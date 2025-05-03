@@ -36,11 +36,11 @@
 .postsPage .post {
   margin: 0;
   border-top: none;
-  transition: all 0.2s ease-in-out;
+  transition: all 0.3s ease-in-out;
   display: contents;
 }
 .postsPage .post:hover {
-  transform: translateY(-2px);
+  transform: translateY(-4px);
 }
 
 /* 個別記事ページのポストスタイル */
@@ -70,7 +70,7 @@
   border-radius: 6px;
   padding: 0.5rem;
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-  transition: all 0.2s ease-in-out;
+  transition: all 0.3s ease-in-out;
   height: 100%;
   display: flex;
   flex-direction: row;
@@ -81,8 +81,9 @@
 
 /* ホバー効果をindexページのポスト一覧のみに限定 */
 .postsPage .postDetail:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.1);
   border-color: #e5e5e5;
+  transform: translateY(-4px);
 }
 
 .postLink {
@@ -172,4 +173,3 @@
   height: 3.0rem;
   vertical-align: -0.5rem;
 }
-
