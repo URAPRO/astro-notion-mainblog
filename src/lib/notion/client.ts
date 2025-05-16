@@ -433,6 +433,25 @@ export async function downloadFile(url: URL, post?: Post, imageIndex?: number) {
     
     filename = `${slugBase}-${imageIndex + 1}.${fileExt}`
     console.log(`Renamed file to: ${filename}`)
+
+    // マッピング情報をJSONファイルに保存
+    const mappingDir = './public/notion/mappings'
+    if (!fs.existsSync(mappingDir)) {
+      fs.mkdirSync(mappingDir, { recursive: true })
+    }
+
+    // URLパスをエンコードして安全なファイル名に変換
+    const urlKey = Buffer.from(url.pathname).toString('base64').replace(/[/+=]/g, '_')
+    const mappingPath = `${mappingDir}/${urlKey}.json`
+    
+    const mapping = {
+      urlPath: url.pathname,
+      originalFilename, 
+      newFilename: filename,
+      dirPath: dir.replace('./public', '')
+    }
+    
+    fs.writeFileSync(mappingPath, JSON.stringify(mapping), 'utf8')
   }
   
   const filepath = `${dir}/${filename}`
@@ -459,6 +478,25 @@ export async function downloadFile(url: URL, post?: Post, imageIndex?: number) {
     console.error(`Failed to save file: ${err}`)
     writeStream.end()
     return Promise.resolve({ originalFilename: '', newFilename: '' })
+  }
+}
+
+// URLパスからマッピング情報を取得する関数を追加
+export function getFileMapping(urlPath: string): { originalFilename: string, newFilename: string, dirPath: string } | null {
+  try {
+    // URLパスをエンコードして安全なファイル名に変換
+    const urlKey = Buffer.from(urlPath).toString('base64').replace(/[/+=]/g, '_')
+    const mappingPath = `./public/notion/mappings/${urlKey}.json`
+    
+    if (!fs.existsSync(mappingPath)) {
+      return null
+    }
+    
+    const mappingData = fs.readFileSync(mappingPath, 'utf8')
+    return JSON.parse(mappingData)
+  } catch (err) {
+    console.error(`Failed to read mapping file: ${err}`)
+    return null
   }
 }
 

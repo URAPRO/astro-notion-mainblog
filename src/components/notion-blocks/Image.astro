@@ -2,6 +2,7 @@
 import { ENABLE_LIGHTBOX } from '../../server-constants.ts'
 import * as interfaces from '../../lib/interfaces'
 import { filePath, filePathWithSlug } from '../../lib/blog-helpers'
+import { getFileMapping } from '../../lib/notion/client'
 import Caption from './Caption.astro'
 
 export interface Props {
@@ -23,12 +24,30 @@ if (block.Image?.External) {
   if (mapping && mapping.originalFilename && mapping.newFilename && mapping.dirPath) {
     // マッピング情報が存在する場合は、新しいファイル名を使用
     image = `${mapping.dirPath}/${mapping.newFilename}`
-  } else if (post && post.Slug && imageIndex !== undefined) {
-    // マッピングが存在せず、post情報とimageIndexがある場合は、slugに基づいたパスを使用
-    image = filePathWithSlug(new URL(block.Image.File.Url), post, imageIndex)
   } else {
-    // どちらでもない場合は通常のfilePathを使用
-    image = filePath(new URL(block.Image.File.Url))
+    // メモリ内マッピングがない場合は、ファイルシステムから取得を試みる
+    try {
+      const urlPath = new URL(block.Image.File.Url).pathname
+      const persistentMapping = getFileMapping(urlPath)
+      
+      if (persistentMapping && persistentMapping.newFilename) {
+        // 永続化されたマッピング情報が存在する場合は、新しいファイル名を使用
+        image = `${persistentMapping.dirPath}/${persistentMapping.newFilename}`
+      } else if (post && post.Slug && imageIndex !== undefined) {
+        // マッピングが存在せず、post情報とimageIndexがある場合は、slugに基づいたパスを使用
+        image = filePathWithSlug(new URL(block.Image.File.Url), post, imageIndex)
+      } else {
+        // どちらでもない場合は通常のfilePathを使用
+        image = filePath(new URL(block.Image.File.Url))
+      }
+    } catch (error) {
+      // エラーが発生した場合はデフォルトのパスを使用
+      if (post && post.Slug && imageIndex !== undefined) {
+        image = filePathWithSlug(new URL(block.Image.File.Url), post, imageIndex)
+      } else {
+        image = filePath(new URL(block.Image.File.Url))
+      }
+    }
   }
 }
 

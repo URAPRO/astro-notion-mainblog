@@ -208,7 +208,7 @@ imageBlocks.forEach((block, index) => {
       case 'toggle':
         return <Toggle block={block} headings={headings} />
       case 'file':
-        return <File block={block} />
+        return <File block={block} blockIdToFileMappings={blockIdToFileMappings} />
       case 'link_to_page':
         return <LinkToPage block={block} />
     }

@@ -1,30 +1,72 @@
 ---
 import * as interfaces from '../../lib/interfaces'
 import { filePath } from '../../lib/blog-helpers'
+import { getFileMapping } from '../../lib/notion/client'
 import Caption from './Caption.astro'
 
 export interface Props {
   block: interfaces.Block
+  blockIdToFileMappings?: Record<string, any>
 }
 
-const { block } = Astro.props
+const { block, blockIdToFileMappings = {} } = Astro.props
 
-let url: URL
+let url: URL | undefined
 try {
-  url = new URL(block.File?.External?.Url || block.File?.File?.Url)
+  const urlString = block.File?.External?.Url || block.File?.File?.Url
+  if (urlString) {
+    url = new URL(urlString)
+  }
 } catch (err) {
   console.error(`Invalid file URL. error: ${err}`)
 }
 
-const filename = decodeURIComponent(url.pathname.split('/').slice(-1)[0])
+let filename = '';
+let filepath = '';
+
+if (url) {
+  if (block.File?.External) {
+    filename = decodeURIComponent(url.pathname.split('/').slice(-1)[0])
+    filepath = url.toString()
+  } else if (block.File?.File) {
+    // ブロックIDに対応するファイル名マッピングがあるか確認
+    const mapping = blockIdToFileMappings[block.Id]
+    
+    if (mapping && mapping.originalFilename && mapping.newFilename && mapping.dirPath) {
+      // マッピング情報が存在する場合は、新しいファイル名を使用
+      filename = mapping.newFilename
+      filepath = `${mapping.dirPath}/${mapping.newFilename}`
+    } else {
+      // メモリ内マッピングがない場合は、ファイルシステムから取得を試みる
+      try {
+        const urlPath = url.pathname
+        const persistentMapping = getFileMapping(urlPath)
+        
+        if (persistentMapping && persistentMapping.newFilename) {
+          // 永続化されたマッピング情報が存在する場合は、新しいファイル名を使用
+          filename = persistentMapping.newFilename
+          filepath = `${persistentMapping.dirPath}/${persistentMapping.newFilename}`
+        } else {
+          // マッピングが存在しない場合は通常のfilePathを使用
+          filename = decodeURIComponent(url.pathname.split('/').slice(-1)[0])
+          filepath = filePath(url)
+        }
+      } catch (error) {
+        // エラーが発生した場合はデフォルトのパスを使用
+        filename = decodeURIComponent(url.pathname.split('/').slice(-1)[0])
+        filepath = filePath(url)
+      }
+    }
+  }
+}
 ---
 
 <div class="file">
   <div>
     {
-      url && (
+      url && block.File && (
         <a
-          href={block.File.External ? url.String() : filePath(url)}
+          href={filepath}
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -37,7 +79,7 @@ const filename = decodeURIComponent(url.pathname.split('/').slice(-1)[0])
       )
     }
   </div>
-  <Caption richTexts={block.File.Caption} />
+  {block.File && <Caption richTexts={block.File.Caption} />}
 </div>
 
 <style>
