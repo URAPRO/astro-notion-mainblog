@@ -1,4 +1,5 @@
 import React from 'react';
+import type { SelectProperty } from '../lib/interfaces';
 
 import {
   TwitterShareButton, XIcon,
@@ -9,15 +10,28 @@ import {
 interface Props {
   url: string;
   title: string;
+  tags?: SelectProperty[];
+  socialShareHashtags?: string;
 }
 
 export const SocialShareButtons: React.FC<Props> = (props) => {
-  const { url, title } = props
+  const { url, title, tags = [], socialShareHashtags } = props;
   const buttonStyle = {
     padding: "4px",
     margin: "4px",
     alignItems: "center"
   };
+
+  let generatedHashtags: string[] = [];
+  if (socialShareHashtags) {
+    generatedHashtags = socialShareHashtags.split(',').map(tag => tag.trim()).filter(tag => tag);
+  } else {
+    generatedHashtags = tags
+      .map(tag => tag.name.replace(/\s+/g, ''))
+      .filter(tag => tag);
+  }
+
+  const allHashtags = ['あでぃの〇〇製作所', 'blog', ...generatedHashtags];
 
   return (
     <>
@@ -29,7 +43,7 @@ export const SocialShareButtons: React.FC<Props> = (props) => {
         <FacebookIcon round size={40} />
         {/*<FacebookShareCount url={url} className="text-blue-600 font-semibold" />*/}
       </FacebookShareButton>
-      <TwitterShareButton url={url} title={title} style={buttonStyle}>
+      <TwitterShareButton url={url} title={title} hashtags={allHashtags} style={buttonStyle}>
         <XIcon size={40} round />
       </TwitterShareButton>
     </>

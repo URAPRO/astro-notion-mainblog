@@ -919,125 +919,87 @@ async function _getColumns(blockId: string): Promise<Column[]> {
 }
 
 async function _getSyncedBlockChildren(block: Block): Promise<Block[]> {
-  let originalBlock: Block = block
-  if (
-    block.SyncedBlock &&
-    block.SyncedBlock.SyncedFrom &&
-    block.SyncedBlock.SyncedFrom.BlockId
-  ) {
-    try {
-      originalBlock = await getBlock(block.SyncedBlock.SyncedFrom.BlockId)
-    } catch (err) {
-      console.log(`Could not retrieve the original synced_block. error: ${err}`)
-      return []
-    }
-  }
-
-  const children = await getAllBlocksByBlockId(originalBlock.Id)
-  return children
+  return getAllBlocksByBlockId(block.SyncedBlock?.SyncedFrom?.BlockId || '')
 }
 
 function _validPageObject(pageObject: responses.PageObject): boolean {
-  const prop = pageObject.properties
-  if (!prop) return false
-
-  return (
-    !!prop.Page.title &&
-    prop.Page.title.length > 0 &&
-    !!prop.Slug.rich_text &&
-    prop.Slug.rich_text.length > 0 &&
-    !!prop.Date.date
-  )
+  const prop = pageObject.properties;
+  return !!(
+    prop.Page?.title && prop.Page.title.length > 0 &&
+    prop.Slug?.rich_text && prop.Slug.rich_text.length > 0 &&
+    prop.Date?.date
+  );
 }
 
 function _buildPost(pageObject: responses.PageObject): Post {
-  const prop = pageObject.properties
+  const prop = pageObject.properties;
 
-  let icon: FileObject | Emoji | null = null
+  let icon: FileObject | Emoji | null = null;
   if (pageObject.icon) {
     if (pageObject.icon.type === 'emoji' && 'emoji' in pageObject.icon) {
       icon = {
         Type: pageObject.icon.type,
         Emoji: pageObject.icon.emoji,
-      }
-    } else if (
-      pageObject.icon.type === 'external' &&
-      'external' in pageObject.icon
-    ) {
+      };
+    } else if (pageObject.icon.type === 'external' && 'external' in pageObject.icon) {
       icon = {
         Type: pageObject.icon.type,
         Url: pageObject.icon.external?.url || '',
-      }
-    } else if (
-      pageObject.icon.type === 'file' &&
-      'file' in pageObject.icon
-    ) {
-      const url = new URL(pageObject.icon.file?.url || '')
-      const filename = decodeURIComponent(url.pathname.split('/').slice(-1)[0])
-      const dir = url.pathname.split('/').slice(-2)[0]
+      };
+    } else if (pageObject.icon.type === 'file' && 'file' in pageObject.icon && pageObject.icon.file?.url) {
       icon = {
         Type: pageObject.icon.type,
-        Url: `/notion/${dir}/${filename}`,
-        ExpiryTime: pageObject.icon.file?.expiry_time,
-      }
+        Url: pageObject.icon.file.url,
+        ExpiryTime: pageObject.icon.file.expiry_time,
+      };
     }
   }
 
-  let cover: FileObject | null = null
+  let cover: FileObject | null = null;
   if (pageObject.cover) {
-    if (pageObject.cover.type === 'external' && 'external' in pageObject.cover) {
-      cover = {
-        Type: pageObject.cover.type,
-        Url: pageObject.cover.external?.url || '',
-      }
-    } else if (pageObject.cover.type === 'file' && 'file' in pageObject.cover) {
-      cover = {
-        Type: pageObject.cover.type,
-        Url: pageObject.cover.file?.url || '',
-        ExpiryTime: pageObject.cover.file?.expiry_time,
-      }
+    cover = {
+      Type: pageObject.cover.type,
+      Url: pageObject.cover.external?.url || pageObject.cover?.file?.url || '',
+    };
+    if (pageObject.cover.type === 'file') {
+      cover.ExpiryTime = pageObject.cover.file?.expiry_time;
     }
   }
 
-  let featuredImage: FileObject | null = null
-  if (prop.FeaturedImage.files && prop.FeaturedImage.files.length > 0) {
-    if (prop.FeaturedImage.files[0].external) {
+  let featuredImage: FileObject | null = null;
+  if (prop.FeaturedImage?.files && prop.FeaturedImage.files.length > 0) {
+    if (prop.FeaturedImage.files[0].type === 'external') {
       featuredImage = {
-        Type: prop.FeaturedImage.type,
-        Url: prop.FeaturedImage.files[0].external.url,
-      }
-    } else if (prop.FeaturedImage.files[0].file) {
+        Type: prop.FeaturedImage.files[0].type,
+        Url: prop.FeaturedImage.files[0].external?.url || '',
+      };
+    } else if (prop.FeaturedImage.files[0].type === 'file' && prop.FeaturedImage.files[0].file?.url) {
       featuredImage = {
-        Type: prop.FeaturedImage.type,
+        Type: prop.FeaturedImage.files[0].type,
         Url: prop.FeaturedImage.files[0].file.url,
         ExpiryTime: prop.FeaturedImage.files[0].file.expiry_time,
-      }
+      };
     }
   }
 
-  const post: Post = {
+  return {
     PageId: pageObject.id,
-    Title: prop.Page.title
-      ? prop.Page.title.map((richText) => richText.plain_text).join('')
-      : '',
+    Title: prop.Page?.title?.[0]?.plain_text || '',
     Icon: icon,
     Cover: cover,
-    Slug: prop.Slug.rich_text
-      ? prop.Slug.rich_text.map((richText) => richText.plain_text).join('')
-      : '',
-    Date: prop.Date.date ? prop.Date.date.start : '',
-    Tags: prop.Tags.multi_select ? prop.Tags.multi_select : [],
+    Slug: prop.Slug?.rich_text?.[0]?.plain_text || '',
+    Date: prop.Date?.date?.start || '',
+    UpdateDate: prop.UpdateDate?.last_edited_time || prop.Date?.date?.start || '',
+    Tags: prop.Tags?.multi_select || [],
     Excerpt:
-      prop.Excerpt.rich_text && prop.Excerpt.rich_text.length > 0
-        ? prop.Excerpt.rich_text.map((richText) => richText.plain_text).join('')
-        : '',
+      prop.Excerpt?.rich_text?.[0]?.plain_text ||
+      prop.Page?.title?.[0]?.plain_text ||
+      '',
     FeaturedImage: featuredImage,
-    Rank: prop.Rank.number ? prop.Rank.number : 0,
-    UpdateDate: prop.UpdateDate.date ? prop.UpdateDate.date.start : '',
-    ExternalLink: prop.ExternalLink.url ? prop.ExternalLink.url : '',
-  }
-
-  return post
+    Rank: prop.Rank?.number || 0,
+    ExternalLink: prop.ExternalLink?.url || undefined,
+    SocialShareHashtags: prop.SocialShareHashtags?.rich_text?.[0]?.plain_text || undefined,
+  };
 }
 
 function _buildRichText(richTextObject: responses.RichTextObject): RichText {
