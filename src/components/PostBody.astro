@@ -5,13 +5,14 @@ import NotionBlocks from './NotionBlocks.astro'
 export interface Props {
   blocks: Block[]
   post?: Post
+  blockIdToFileMappings?: Record<string, any>
 }
 
-const { blocks, post } = Astro.props
+const { blocks, post, blockIdToFileMappings = {} } = Astro.props
 ---
 
 <div class="post-body">
-  <NotionBlocks blocks={blocks} isRoot={true} headings={[]} level={1} post={post} />
+  <NotionBlocks blocks={blocks} isRoot={true} headings={[]} level={1} post={post} blockIdToFileMappings={blockIdToFileMappings} />
 </div>
 
 <style>

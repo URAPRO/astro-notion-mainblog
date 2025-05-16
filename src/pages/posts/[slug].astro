@@ -63,52 +63,57 @@ const fileAtacchedBlocks = extractTargetBlocks('image', blocks)
   });
 
 // Download files
-await Promise.all(
+const fileNameMappings = await Promise.all(
   fileAtacchedBlocks
     .map(async (block) => {
-      // Access File property safely
-      const fileDetails = block.Image?.File || block.File?.File;
-      if (!fileDetails || !fileDetails.ExpiryTime) {
-        // If ExpiryTime is not available, or fileDetails is undefined,
-        // it implies we might need to fetch the block again or handle as an error.
-        // For now, assume getBlock(block.Id) is the fallback.
-        return getBlock(block.Id);
-      }
+      const imageOrFile = block.Image || block.File
+      if (!imageOrFile || !imageOrFile.File) return Promise.resolve({ blockId: block.Id, mapping: null })
       
-      const expiryTime = fileDetails.ExpiryTime;
-      if (Date.parse(expiryTime) > Date.now()) {
-        return Promise.resolve(block);
+      const expiryTime = imageOrFile.File.ExpiryTime
+      if (expiryTime && Date.parse(expiryTime) > Date.now()) {
+        return Promise.resolve({ blockId: block.Id, mapping: null })
       }
-      return getBlock(block.Id);
+      return getBlock(block.Id).then(block => ({ blockId: block.Id, block }))
     })
     .map((promise) =>
-      promise.then((block) => {
-        if (!block) return Promise.reject(new Error('Block not found'));
+      promise.then((data) => {
+        if (!data || ('block' in data && !data.block)) return Promise.resolve({ blockId: data.blockId, mapping: null })
         
-        // Access File property safely
-        const fileDetails = block.Image?.File || block.File?.File;
-        if (!fileDetails || !fileDetails.Url) {
-          console.log('Invalid file URL after getBlock or from cache');
-          return Promise.reject(new Error('Invalid file URL'));
+        if ('block' in data) {
+          const block = data.block
+          const imageOrFile = block.Image || block.File
+          if (!imageOrFile || !imageOrFile.File) return Promise.resolve({ blockId: data.blockId, mapping: null })
+
+          let url!: URL
+          try {
+            url = new URL(imageOrFile.File.Url)
+          } catch {
+            console.log('Invalid file URL: ', imageOrFile?.File?.Url)
+            return Promise.resolve({ blockId: data.blockId, mapping: null })
+          }
+          return Promise.resolve({ blockId: data.blockId, url })
         }
         
-        let url: URL;
-        try {
-          url = new URL(fileDetails.Url);
-        } catch {
-          console.log('Invalid file URL: ', fileDetails.Url);
-          return Promise.reject(new Error('Malformed file URL'));
-        }
-        
-        return Promise.resolve({ block, url });
+        return Promise.resolve({ blockId: data.blockId, mapping: null })
       })
     )
     .map((promise, index) => 
       promise.then((data) => {
-        return downloadFile(data.url, post, index);
+        if ('url' in data && data.url) {
+          return downloadFile(data.url, post, index).then(mapping => ({ blockId: data.blockId, mapping }))
+        }
+        return Promise.resolve({ blockId: data.blockId, mapping: null })
       })
     )
-);
+)
+
+// ブロックIDからファイル名マッピングへの辞書を作成
+const blockIdToFileMappings: Record<string, any> = {}
+fileNameMappings.forEach(item => {
+  if (item && item.blockId && item.mapping) {
+    blockIdToFileMappings[item.blockId] = item.mapping
+  }
+})
 
 const currentPostIndex = allPosts.findIndex((post) => post.Slug === slug);
 const prevPost = allPosts[currentPostIndex + 1];
@@ -135,7 +140,7 @@ if (post.FeaturedImage && post.FeaturedImage.Url) {
         <PostUpdateDate post={post} />
       </div>
       <PostTags post={post} enableLink={true} />
-      <PostBody blocks={blocks} />
+      <PostBody blocks={blocks} post={post} blockIdToFileMappings={blockIdToFileMappings} />
       <SocialShareButtons title={post.Title} url={getPostFullLink(post)} tags={post.Tags} socialShareHashtags={post.SocialShareHashtags} client:load/>
 
       <footer>

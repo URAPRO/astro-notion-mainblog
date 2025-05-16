@@ -8,18 +8,26 @@ export interface Props {
   block: interfaces.Block
   post?: interfaces.Post
   imageIndex?: number
+  blockIdToFileMappings?: Record<string, any>
 }
 
-const { block, post, imageIndex } = Astro.props
+const { block, post, imageIndex, blockIdToFileMappings = {} } = Astro.props
 
 let image = ''
 if (block.Image?.External) {
   image = block.Image.External.Url
 } else if (block.Image?.File) {
-  // post情報とimageIndexがある場合は、slugに基づいたパスを使用
-  if (post && post.Slug && imageIndex !== undefined) {
+  // ブロックIDに対応するファイル名マッピングがあるか確認
+  const mapping = blockIdToFileMappings[block.Id]
+  
+  if (mapping && mapping.originalFilename && mapping.newFilename && mapping.dirPath) {
+    // マッピング情報が存在する場合は、新しいファイル名を使用
+    image = `${mapping.dirPath}/${mapping.newFilename}`
+  } else if (post && post.Slug && imageIndex !== undefined) {
+    // マッピングが存在せず、post情報とimageIndexがある場合は、slugに基づいたパスを使用
     image = filePathWithSlug(new URL(block.Image.File.Url), post, imageIndex)
   } else {
+    // どちらでもない場合は通常のfilePathを使用
     image = filePath(new URL(block.Image.File.Url))
   }
 }

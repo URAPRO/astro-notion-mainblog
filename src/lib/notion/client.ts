@@ -407,12 +407,12 @@ export async function downloadFile(url: URL, post?: Post, imageIndex?: number) {
     })
   } catch (err) {
     console.error(`Failed to download file: ${err}`)
-    return Promise.resolve()
+    return Promise.resolve({ originalFilename: '', newFilename: '' })
   }
 
   if (!res || res.status != 200) {
     console.error(`Failed to download file. Status: ${res?.status}`)
-    return Promise.resolve()
+    return Promise.resolve({ originalFilename: '', newFilename: '' })
   }
 
   const dir = './public/notion/' + url.pathname.split('/').slice(-2)[0]
@@ -421,7 +421,8 @@ export async function downloadFile(url: URL, post?: Post, imageIndex?: number) {
     fs.mkdirSync(dir, { recursive: true })
   }
 
-  let filename = decodeURIComponent(url.pathname.split('/').slice(-1)[0])
+  let originalFilename = decodeURIComponent(url.pathname.split('/').slice(-1)[0])
+  let filename = originalFilename
   // 元のファイル拡張子を保持
   const fileExt = filename.split('.').pop() || ''
   
@@ -448,10 +449,16 @@ export async function downloadFile(url: URL, post?: Post, imageIndex?: number) {
   try {
     await pipeline(stream, new ExifTransformer(), writeStream)
     console.log(`File saved successfully: ${filepath}`)
+    // ファイル名のマッピング情報を返す
+    return Promise.resolve({ 
+      originalFilename, 
+      newFilename: filename,
+      dirPath: dir.replace('./public', '')
+    })
   } catch (err) {
     console.error(`Failed to save file: ${err}`)
     writeStream.end()
-    return Promise.resolve()
+    return Promise.resolve({ originalFilename: '', newFilename: '' })
   }
 }
 

@@ -36,6 +36,7 @@ export interface Props {
   level: number
   headings: interfaces.Block[]
   post?: interfaces.Post
+  blockIdToFileMappings?: Record<string, any>
 }
 
 const {
@@ -44,6 +45,7 @@ const {
   level = 1,
   headings: rawHeadings = [],
   post,
+  blockIdToFileMappings = {},
 } = Astro.props
 
 const blocks = rawBlocks.reduce((arr, block: interfaces.Block, i: number) => {
@@ -139,7 +141,7 @@ imageBlocks.forEach((block, index) => {
       case 'table_of_contents':
         return <TableOfContents block={block} headings={headings} />
       case 'image':
-        return <Image block={block} post={post} imageIndex={imageBlockIndices[block.Id]} />
+        return <Image block={block} post={post} imageIndex={imageBlockIndices[block.Id]} blockIdToFileMappings={blockIdToFileMappings} />
       case 'video':
         return <Video block={block} />
       case 'code':
