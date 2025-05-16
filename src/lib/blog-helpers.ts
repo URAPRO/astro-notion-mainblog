@@ -8,10 +8,41 @@ import type {
   Column, Post,
 } from './interfaces';
 import { pathJoin } from './utils'
+import fs from 'fs'
 
 export const filePath = (url: URL): string => {
-  const [dir, filename] = url.pathname.split('/').slice(-2)
-  return pathJoin(BASE_PATH, `/notion/${dir}/${filename}`)
+  const dir = url.pathname.split('/').slice(-2)[0]
+  const originalFilename = decodeURIComponent(url.pathname.split('/').slice(-1)[0])
+  
+  // ディレクトリ内のファイル一覧を取得
+  const dirPath = `./public/notion/${dir}`
+  if (fs.existsSync(dirPath)) {
+    const files = fs.readdirSync(dirPath)
+    
+    // オリジナルのファイル名に一致するファイルがあれば、それを使用
+    if (files.includes(originalFilename)) {
+      return pathJoin(BASE_PATH, `/notion/${dir}/${originalFilename}`)
+    }
+    
+    // スラグ命名規則に変換されたファイルを探す
+    // ファイル拡張子を取得
+    const fileExtension = originalFilename.split('.').pop() || ''
+    
+    // 同じ拡張子のリネームされたファイルを探す
+    const renamedFiles = files.filter(f => 
+      f.endsWith(`.${fileExtension}`) && 
+      f !== originalFilename &&
+      /-\d+\./.test(f) // スラグ-数字.拡張子 パターンのファイル
+    )
+    
+    // URLと同じディレクトリ内のリネームされたファイルのいずれかを返す
+    if (renamedFiles.length > 0) {
+      return pathJoin(BASE_PATH, `/notion/${dir}/${renamedFiles[0]}`)
+    }
+  }
+  
+  // 何も見つからない場合は元のパスを返す
+  return pathJoin(BASE_PATH, `/notion/${dir}/${originalFilename}`)
 }
 
 export const extractTargetBlocks = (
