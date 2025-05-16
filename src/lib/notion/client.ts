@@ -425,17 +425,12 @@ export async function downloadFile(url: URL, post?: Post, imageIndex?: number) {
   // 元のファイル拡張子を保持
   const fileExt = filename.split('.').pop() || ''
   
-  // postとimageIndexが提供されている場合、excerpt-indexベースの名前を生成
-  if (post && post.Excerpt && imageIndex !== undefined) {
-    // excerptからファイル名として使える文字列を生成
-    const excerptBase = post.Excerpt
-      .toLowerCase()
-      .replace(/[^\w\s-]/g, '') // 非英数字、非アンダースコア、非ハイフン、非スペースを削除
-      .replace(/\s+/g, '-')     // スペースをハイフンに変換
-      .replace(/-+/g, '-')      // 連続するハイフンを単一のハイフンに変換
-      .trim()
+  // postとimageIndexが提供されている場合、slug-indexベースの名前を生成
+  if (post && post.Slug && imageIndex !== undefined) {
+    // slugはすでにURLに適した形式のため、そのまま使用できる
+    const slugBase = post.Slug;
     
-    filename = `${excerptBase}-${imageIndex + 1}.${fileExt}`
+    filename = `${slugBase}-${imageIndex + 1}.${fileExt}`
     console.log(`Renamed file to: ${filename}`)
   }
   
