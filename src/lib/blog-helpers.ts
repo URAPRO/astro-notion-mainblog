@@ -14,6 +14,30 @@ export const filePath = (url: URL): string => {
   return pathJoin(BASE_PATH, `/notion/${dir}/${filename}`)
 }
 
+// excerptに基づいた画像パスを生成する
+export const filePathWithExcerpt = (url: URL, post?: Post, imageIndex?: number): string => {
+  const [dir, filename] = url.pathname.split('/').slice(-2)
+  
+  // postとimageIndexが提供されていない場合は通常のfilePathを返す
+  if (!post || !post.Excerpt || imageIndex === undefined) {
+    return pathJoin(BASE_PATH, `/notion/${dir}/${filename}`)
+  }
+  
+  // 元のファイル拡張子を保持
+  const fileExt = filename.split('.').pop() || ''
+  
+  // excerptからファイル名として使える文字列を生成
+  const excerptBase = post.Excerpt
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '') // 非英数字、非アンダースコア、非ハイフン、非スペースを削除
+    .replace(/\s+/g, '-')     // スペースをハイフンに変換
+    .replace(/-+/g, '-')      // 連続するハイフンを単一のハイフンに変換
+    .trim()
+  
+  const newFilename = `${excerptBase}-${imageIndex + 1}.${fileExt}`
+  return pathJoin(BASE_PATH, `/notion/${dir}/${newFilename}`)
+}
+
 export const extractTargetBlocks = (
   blockType: string,
   blocks: Block[]

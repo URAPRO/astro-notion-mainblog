@@ -1,25 +1,32 @@
 ---
 import { ENABLE_LIGHTBOX } from '../../server-constants.ts'
 import * as interfaces from '../../lib/interfaces'
-import { filePath } from '../../lib/blog-helpers'
+import { filePath, filePathWithExcerpt } from '../../lib/blog-helpers'
 import Caption from './Caption.astro'
 
 export interface Props {
   block: interfaces.Block
+  post?: interfaces.Post
+  imageIndex?: number
 }
 
-const { block } = Astro.props
+const { block, post, imageIndex } = Astro.props
 
 let image = ''
-if (block.Image.External) {
+if (block.Image?.External) {
   image = block.Image.External.Url
-} else if (block.Image.File) {
-  image = filePath(new URL(block.Image.File.Url))
+} else if (block.Image?.File) {
+  // post情報とimageIndexがある場合は、excerptに基づいたパスを使用
+  if (post && post.Excerpt && imageIndex !== undefined) {
+    image = filePathWithExcerpt(new URL(block.Image.File.Url), post, imageIndex)
+  } else {
+    image = filePath(new URL(block.Image.File.Url))
+  }
 }
 
 // widthに関する情報があれば抽出し、Captionデータからは削除する
 let width = ''
-if (block.Image.Caption[0]?.Text?.Content) {
+if (block.Image?.Caption?.[0]?.Text?.Content) {
   let caption = block.Image.Caption[0].Text.Content;
   let match = caption.match(/^size(\d+)([\s\S]*)/);
   if (match){
@@ -31,7 +38,7 @@ if (block.Image.Caption[0]?.Text?.Content) {
 
 <figure class="image">
   {
-    image && (
+    image && block.Image && (
       <div>
         <div>
           {ENABLE_LIGHTBOX ? (

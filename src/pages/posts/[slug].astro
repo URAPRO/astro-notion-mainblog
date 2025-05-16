@@ -65,25 +65,40 @@ const fileAtacchedBlocks = extractTargetBlocks('image', blocks)
 await Promise.all(
   fileAtacchedBlocks
     .map(async (block) => {
-      const expiryTime = (block.Image || block.File).File.ExpiryTime
-      if (Date.parse(expiryTime) > Date.now()) {
+      const imageOrFile = block.Image || block.File
+      if (!imageOrFile || !imageOrFile.File) return Promise.resolve(block)
+      
+      const expiryTime = imageOrFile.File.ExpiryTime
+      if (expiryTime && Date.parse(expiryTime) > Date.now()) {
         return Promise.resolve(block)
       }
       return getBlock(block.Id)
     })
     .map((promise) =>
       promise.then((block) => {
-        let url!: URL
-        try {
-          url = new URL((block.Image || block.File).File.Url)
-        } catch {
-          console.log('Invalid file URL: ', (block.Image || block.File)?.File?.Url)
+        if (!block) return Promise.reject()
+        
+        const imageOrFile = block.Image || block.File
+        if (!imageOrFile || !imageOrFile.File || !imageOrFile.File.Url) {
+          console.log('Missing file URL')
           return Promise.reject()
         }
-        return Promise.resolve(url)
+        
+        let url: URL
+        try {
+          url = new URL(imageOrFile.File.Url)
+        } catch {
+          console.log('Invalid file URL: ', imageOrFile.File.Url)
+          return Promise.reject()
+        }
+        return Promise.resolve({ block, url })
       })
     )
-    .map((promise) => promise.then(downloadFile))
+    .map((promise, index) => 
+      promise.then((data) => {
+        return downloadFile(data.url, post, index)
+      })
+    )
 )
 
 const currentPostIndex = allPosts.findIndex((post) => post.Slug === slug)
@@ -92,7 +107,8 @@ const nextPost = allPosts[currentPostIndex - 1]
 
 let ogImage = ''
 if (post.FeaturedImage && post.FeaturedImage.Url) {
-  ogImage = new URL(filePath(new URL(post.FeaturedImage.Url)), Astro.site)
+  const featuredImageURL = new URL(post.FeaturedImage.Url)
+  ogImage = new URL(filePath(featuredImageURL), Astro.site).toString()
 }
 ---
 

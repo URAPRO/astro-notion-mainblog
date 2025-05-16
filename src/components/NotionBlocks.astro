@@ -35,6 +35,7 @@ export interface Props {
   isRoot: boolean
   level: number
   headings: interfaces.Block[]
+  post?: interfaces.Post
 }
 
 const {
@@ -42,6 +43,7 @@ const {
   isRoot = false,
   level = 1,
   headings: rawHeadings = [],
+  post,
 } = Astro.props
 
 const blocks = rawBlocks.reduce((arr, block: interfaces.Block, i: number) => {
@@ -114,6 +116,13 @@ const bookmarkURLs = blocks
   .filter((url: URL) => url && !isTweetURL(url) && !isAmazonURL(url))
 
 const bookmarkURLMap = await buildURLToHTMLMap(bookmarkURLs)
+
+// 画像ブロックのインデックスを追跡
+const imageBlocks = rawBlocks.filter(block => block.Type === 'image')
+const imageBlockIndices: Record<string, number> = {}
+imageBlocks.forEach((block, index) => {
+  imageBlockIndices[block.Id] = index
+})
 ---
 
 {
@@ -130,7 +139,7 @@ const bookmarkURLMap = await buildURLToHTMLMap(bookmarkURLs)
       case 'table_of_contents':
         return <TableOfContents block={block} headings={headings} />
       case 'image':
-        return <Image block={block} />
+        return <Image block={block} post={post} imageIndex={imageBlockIndices[block.Id]} />
       case 'video':
         return <Video block={block} />
       case 'code':
