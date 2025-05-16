@@ -31,7 +31,7 @@ export const SocialShareButtons: React.FC<Props> = (props) => {
       .filter(tag => tag);
   }
 
-  const allHashtags = ['あでぃの製作所', ...generatedHashtags];
+  const allHashtags = ['あでぃの〇〇製作所', 'blog', ...generatedHashtags];
 
   return (
     <>
