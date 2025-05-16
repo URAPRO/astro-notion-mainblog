@@ -65,7 +65,7 @@ const fileAtacchedBlocks = extractTargetBlocks('image', blocks)
 // Download files
 await Promise.all(
   fileAtacchedBlocks
-    .map(async (block) => {
+    .map(async (block, index) => {
       // Access File property safely
       const fileDetails = block.Image?.File || block.File?.File;
       if (!fileDetails || !fileDetails.ExpiryTime) {
@@ -80,7 +80,7 @@ await Promise.all(
       }
       return getBlock(block.Id);
     })
-    .map((promise) =>
+    .map((promise, index) =>
       promise.then((block) => {
         let url: URL;
         // Access File property safely
@@ -95,10 +95,10 @@ await Promise.all(
           console.log('Invalid file URL: ', fileDetails.Url);
           return Promise.reject(new Error('Malformed file URL'));
         }
-        return Promise.resolve(url);
+        return Promise.resolve({ url, index });
       })
     )
-    .map((promise) => promise.then(downloadFile))
+    .map((promise) => promise.then(({ url, index }) => downloadFile(url, slug, index + 1)))
 );
 
 const currentPostIndex = allPosts.findIndex((post) => post.Slug === slug);
@@ -126,7 +126,7 @@ if (post.FeaturedImage && post.FeaturedImage.Url) {
         <PostUpdateDate post={post} />
       </div>
       <PostTags post={post} enableLink={true} />
-      <PostBody blocks={blocks} />
+      <PostBody blocks={blocks} slug={slug} />
       <SocialShareButtons title={post.Title} url={getPostFullLink(post)} tags={post.Tags} socialShareHashtags={post.SocialShareHashtags} client:load/>
 
       <footer>

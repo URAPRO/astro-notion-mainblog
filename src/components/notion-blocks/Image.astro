@@ -6,20 +6,23 @@ import Caption from './Caption.astro'
 
 export interface Props {
   block: interfaces.Block
+  slug?: string 
+  imageIndex?: number
 }
 
-const { block } = Astro.props
+const { block, slug, imageIndex } = Astro.props
 
 let image = ''
-if (block.Image.External) {
+if (block.Image?.External) {
   image = block.Image.External.Url
-} else if (block.Image.File) {
+} else if (block.Image?.File) {
+  // ビルド時と開発時の両方で動作するよう修正
   image = filePath(new URL(block.Image.File.Url))
 }
 
 // widthに関する情報があれば抽出し、Captionデータからは削除する
 let width = ''
-if (block.Image.Caption[0]?.Text?.Content) {
+if (block.Image?.Caption?.[0]?.Text?.Content) {
   let caption = block.Image.Caption[0].Text.Content;
   let match = caption.match(/^size(\d+)([\s\S]*)/);
   if (match){
@@ -42,7 +45,7 @@ if (block.Image.Caption[0]?.Text?.Content) {
             <img src={image} alt="Image in a image block" {width} loading="lazy" />
           )}
         </div>
-        <Caption richTexts={block.Image.Caption} />
+        {block.Image?.Caption && <Caption richTexts={block.Image.Caption} />}
       </div>
     )
   }

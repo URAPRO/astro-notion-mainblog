@@ -33,8 +33,9 @@ import AmazonCard from './notion-blocks/AmazonCard.astro'
 export interface Props {
   blocks: interfaces.Block[]
   isRoot: boolean
-  level: number
-  headings: interfaces.Block[]
+  level?: number
+  headings?: interfaces.Block[]
+  slug?: string
 }
 
 const {
@@ -42,6 +43,7 @@ const {
   isRoot = false,
   level = 1,
   headings: rawHeadings = [],
+  slug,
 } = Astro.props
 
 const blocks = rawBlocks.reduce((arr, block: interfaces.Block, i: number) => {
@@ -117,7 +119,7 @@ const bookmarkURLMap = await buildURLToHTMLMap(bookmarkURLs)
 ---
 
 {
-  blocks.map((block: interfaces.Block) => {
+  blocks.map((block: interfaces.Block, index: number) => {
     switch (block.Type) {
       case 'paragraph':
         return <Paragraph block={block} headings={headings} />
@@ -130,7 +132,7 @@ const bookmarkURLMap = await buildURLToHTMLMap(bookmarkURLs)
       case 'table_of_contents':
         return <TableOfContents block={block} headings={headings} />
       case 'image':
-        return <Image block={block} />
+        return <Image block={block} slug={slug} imageIndex={index + 1} />
       case 'video':
         return <Video block={block} />
       case 'code':

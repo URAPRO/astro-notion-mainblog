@@ -5,9 +5,11 @@ import Caption from './Caption.astro'
 
 export interface Props {
   block: interfaces.Block
+  slug?: string
+  imageIndex?: number
 }
 
-const { block } = Astro.props
+const { block, slug, imageIndex } = Astro.props
 
 let url: URL
 try {

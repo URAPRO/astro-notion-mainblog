@@ -395,7 +395,7 @@ export async function getAllTags(): Promise<SelectProperty[]> {
     )
 }
 
-export async function downloadFile(url: URL) {
+export async function downloadFile(url: URL, slug?: string, imageIndex?: number) {
   let res!: AxiosResponse
   try {
     console.log(`Downloading file from: ${url.toString()}`)
@@ -421,8 +421,21 @@ export async function downloadFile(url: URL) {
     fs.mkdirSync(dir, { recursive: true })
   }
 
-  const filename = decodeURIComponent(url.pathname.split('/').slice(-1)[0])
-  const filepath = `${dir}/${filename}`
+  // 元のファイル名を取得
+  const originalFilename = decodeURIComponent(url.pathname.split('/').slice(-1)[0])
+  // ファイル拡張子を取得
+  const fileExtension = originalFilename.split('.').pop() || ''
+  
+  // slugとimageIndexが提供されている場合、新しいファイル名を生成
+  let filepath
+  if (slug && imageIndex !== undefined) {
+    const newFilename = `${slug}-${imageIndex}.${fileExtension}`
+    filepath = `${dir}/${newFilename}`
+    console.log(`Renaming file to: ${newFilename}`)
+  } else {
+    filepath = `${dir}/${originalFilename}`
+  }
+  
   console.log(`Saving file to: ${filepath}`)
 
   const writeStream = createWriteStream(filepath)
