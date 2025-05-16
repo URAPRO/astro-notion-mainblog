@@ -126,8 +126,8 @@ if (post.FeaturedImage && post.FeaturedImage.Url) {
         <PostUpdateDate post={post} />
       </div>
       <PostTags post={post} enableLink={true} />
-      <SocialShareButtons title={post.Title} url={getPostFullLink(post)} tags={post.Tags} socialShareHashtags={post.SocialShareHashtags} client:load/>
       <PostBody blocks={blocks} />
+      <SocialShareButtons title={post.Title} url={getPostFullLink(post)} tags={post.Tags} socialShareHashtags={post.SocialShareHashtags} client:load/>
 
       <footer>
         <PostRelativeLink prevPost={prevPost} nextPost={nextPost} />
