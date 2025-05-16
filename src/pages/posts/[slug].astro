@@ -57,58 +57,67 @@ const fileAtacchedBlocks = extractTargetBlocks('image', blocks)
     if (!block) {
       return false
     }
-    const imageOrFile = block.Image || block.File
-    return imageOrFile && imageOrFile.File && imageOrFile.File.Url
-  })
+    const imageOrFile = block.Image || block.File;
+    // Ensure File object and its Url exist
+    return imageOrFile && imageOrFile.File && imageOrFile.File.Url;
+  });
 
 // Download files
 await Promise.all(
   fileAtacchedBlocks
     .map(async (block) => {
-      const imageOrFile = block.Image || block.File
-      if (!imageOrFile || !imageOrFile.File) return Promise.resolve(block)
-      
-      const expiryTime = imageOrFile.File.ExpiryTime
-      if (expiryTime && Date.parse(expiryTime) > Date.now()) {
-        return Promise.resolve(block)
+      // Access File property safely
+      const fileDetails = block.Image?.File || block.File?.File;
+      if (!fileDetails || !fileDetails.ExpiryTime) {
+        // If ExpiryTime is not available, or fileDetails is undefined,
+        // it implies we might need to fetch the block again or handle as an error.
+        // For now, assume getBlock(block.Id) is the fallback.
+        return getBlock(block.Id);
       }
-      return getBlock(block.Id)
+      
+      const expiryTime = fileDetails.ExpiryTime;
+      if (Date.parse(expiryTime) > Date.now()) {
+        return Promise.resolve(block);
+      }
+      return getBlock(block.Id);
     })
     .map((promise) =>
       promise.then((block) => {
-        if (!block) return Promise.reject()
+        if (!block) return Promise.reject(new Error('Block not found'));
         
-        const imageOrFile = block.Image || block.File
-        if (!imageOrFile || !imageOrFile.File || !imageOrFile.File.Url) {
-          console.log('Missing file URL')
-          return Promise.reject()
+        // Access File property safely
+        const fileDetails = block.Image?.File || block.File?.File;
+        if (!fileDetails || !fileDetails.Url) {
+          console.log('Invalid file URL after getBlock or from cache');
+          return Promise.reject(new Error('Invalid file URL'));
         }
         
-        let url: URL
+        let url: URL;
         try {
-          url = new URL(imageOrFile.File.Url)
+          url = new URL(fileDetails.Url);
         } catch {
-          console.log('Invalid file URL: ', imageOrFile.File.Url)
-          return Promise.reject()
+          console.log('Invalid file URL: ', fileDetails.Url);
+          return Promise.reject(new Error('Malformed file URL'));
         }
-        return Promise.resolve({ block, url })
+        
+        return Promise.resolve({ block, url });
       })
     )
     .map((promise, index) => 
       promise.then((data) => {
-        return downloadFile(data.url, post, index)
+        return downloadFile(data.url, post, index);
       })
     )
-)
+);
 
-const currentPostIndex = allPosts.findIndex((post) => post.Slug === slug)
-const prevPost = allPosts[currentPostIndex + 1]
-const nextPost = allPosts[currentPostIndex - 1]
+const currentPostIndex = allPosts.findIndex((post) => post.Slug === slug);
+const prevPost = allPosts[currentPostIndex + 1];
+const nextPost = allPosts[currentPostIndex - 1];
 
-let ogImage = ''
+let ogImage = '';
 if (post.FeaturedImage && post.FeaturedImage.Url) {
   const featuredImageURL = new URL(post.FeaturedImage.Url)
-  ogImage = new URL(filePath(featuredImageURL), Astro.site).toString()
+  ogImage = new URL(filePath(featuredImageURL), Astro.site).toString();
 }
 ---
 
