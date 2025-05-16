@@ -11,19 +11,25 @@ interface Props {
   url: string;
   title: string;
   tags?: SelectProperty[];
+  socialShareHashtags?: string;
 }
 
 export const SocialShareButtons: React.FC<Props> = (props) => {
-  const { url, title, tags = [] } = props;
+  const { url, title, tags = [], socialShareHashtags } = props;
   const buttonStyle = {
     padding: "4px",
     margin: "4px",
     alignItems: "center"
   };
 
-  const generatedHashtags = tags
-    .map(tag => tag.name.replace(/\s+/g, ''))
-    .filter(tag => tag);
+  let generatedHashtags: string[] = [];
+  if (socialShareHashtags) {
+    generatedHashtags = socialShareHashtags.split(',').map(tag => tag.trim()).filter(tag => tag);
+  } else {
+    generatedHashtags = tags
+      .map(tag => tag.name.replace(/\s+/g, ''))
+      .filter(tag => tag);
+  }
 
   const allHashtags = ['あでぃの製作所', ...generatedHashtags];
 

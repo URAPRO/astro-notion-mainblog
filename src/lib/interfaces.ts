@@ -18,6 +18,7 @@ export interface Post {
   FeaturedImage: FileObject | null
   Rank: number
   ExternalLink?: string
+  SocialShareHashtags?: string
 }
 
 export interface Block {
