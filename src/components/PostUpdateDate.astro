@@ -1,5 +1,5 @@
 ---
-import { Post } from '../lib/interfaces.ts'
+import type { Post } from '../lib/interfaces.ts'
 import { getDateStr } from '../lib/blog-helpers.ts'
 
 export interface Props {
@@ -7,10 +7,18 @@ export interface Props {
 }
 
 const { post } = Astro.props
+
+// 投稿日と更新日を YYYY-MM-DD 形式で取得
+const publishedDate = getDateStr(post.Date)
+const updatedDate = post.UpdateDate ? getDateStr(post.UpdateDate) : ''
+
+// 更新日を表示するかどうかのフラグ
+// 更新日が存在し、かつ投稿日と異なる場合のみ true
+const shouldShowUpdateDate = updatedDate && publishedDate !== updatedDate
 ---
 
 <div class="post-date">
-  {post.UpdateDate ? <span>更新日：{getDateStr(post.UpdateDate)}</span> : ''}
+  {shouldShowUpdateDate ? <span>更新日：{updatedDate}</span> : ''}
 </div>
 
 <style>
