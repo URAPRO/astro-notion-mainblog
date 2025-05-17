@@ -19,6 +19,8 @@ export interface Post {
   Rank: number
   ExternalLink?: string
   SocialShareHashtags?: string
+  MetaDescription?: string
+  LastEditedDate: string
 }
 
 export interface Block {

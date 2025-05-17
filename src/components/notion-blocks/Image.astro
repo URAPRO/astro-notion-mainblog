@@ -20,16 +20,66 @@ if (block.Image?.External) {
   image = filePath(new URL(block.Image.File.Url))
 }
 
-// widthに関する情報があれば抽出し、Captionデータからは削除する
-let width = ''
-if (block.Image?.Caption?.[0]?.Text?.Content) {
-  let caption = block.Image.Caption[0].Text.Content;
-  let match = caption.match(/^size(\d+)([\s\S]*)/);
-  if (match){
-    width = match[1].trim() + 'px';
-    block.Image.Caption[0].Text.Content = match[2].trim();
+// widthとaltテキストに関する情報を抽出し、Captionデータからは削除する
+let width = '';
+let altText = "Image from blog post"; // デフォルトaltテキスト
+let displayCaption = ''; // 表示用キャプション
+
+if (block.Image?.Caption && block.Image.Caption.length > 0) {
+  let captionInput = block.Image.Caption.map(c => c.PlainText).join('').trim();
+
+  // 1. alt の抽出 (例: alt:テキスト)
+  // alt: の値は、size:が出現する前まで、または文字列の最後までとする
+  const altRegex = /alt:((?:(?!size:).)+)/i; 
+  const altMatch = captionInput.match(altRegex);
+  if (altMatch && altMatch[1]) {
+    altText = altMatch[1].trim();
+    // altMatch[0] には "alt:テキスト" 全体が含まれるので、それを削除
+    captionInput = captionInput.replace(altMatch[0], '').trim(); 
   }
+
+  // 2. width(size) の抽出 (例: size:数字px または size数字)
+  // captionInput は alt:部分が除去された後の文字列
+  const sizeRegex = /(?:size:\s*|size\s*)(\d+)(px)?/i;
+  const sizeMatch = captionInput.match(sizeRegex);
+  if (sizeMatch && sizeMatch[1]) {
+    width = sizeMatch[1].trim() + (sizeMatch[2] || 'px');
+    // sizeMatch[0] には "size:数字px" 全体が含まれるので、それを削除
+    captionInput = captionInput.replace(sizeMatch[0], '').trim(); 
+  }
+  
+  // 3. 残ったcaptionInputが表示用キャプション
+  displayCaption = captionInput;
+
+  // もしaltTextがデフォルトのままで、displayCaptionに何かあれば、それをaltTextにも使う
+  // (上記でalt指定があればaltTextは更新されているので、この条件は主にalt指定なしの場合に機能)
+  if (altText === "Image from blog post" && displayCaption) {
+    altText = displayCaption;
+    // この場合、表示用キャプションは空にするか、altTextと同じにするか選択。今回は空にしてみる。
+    displayCaption = ''; 
+  }
+  
+  // block.Image.Captionを更新して、Captionコンポーネントが表示用キャプションのみを扱うようにする
+  if (block.Image.Caption[0]?.Text) {
+    if (displayCaption) {
+      block.Image.Caption[0].Text.Content = displayCaption;
+    } else {
+      block.Image.Caption = []; // 空の配列を代入
+    }
+  }
+
+} else if (block.Image?.File?.Url) {
+  try {
+    const urlParts = new URL(block.Image.File.Url).pathname.split('/');
+    altText = decodeURIComponent(urlParts[urlParts.length - 1]);
+  } catch {}
+} else if (block.Image?.External?.Url) {
+  try {
+    const urlParts = new URL(block.Image.External.Url).pathname.split('/');
+    altText = decodeURIComponent(urlParts[urlParts.length - 1]);
+  } catch {}
 }
+
 ---
 
 <figure class="image">
@@ -39,10 +89,10 @@ if (block.Image?.Caption?.[0]?.Text?.Content) {
         <div>
           {ENABLE_LIGHTBOX ? (
             <a data-fslightbox href={image} data-type="image">
-              <img src={image} alt="Image in a image block" {width} loading="lazy" />
+              <img src={image} alt={altText} {width} loading="lazy" />
             </a>
           ) : (
-            <img src={image} alt="Image in a image block" {width} loading="lazy" />
+            <img src={image} alt={altText} {width} loading="lazy" />
           )}
         </div>
         {block.Image?.Caption && <Caption richTexts={block.Image.Caption} />}

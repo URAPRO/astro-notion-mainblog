@@ -1008,8 +1008,10 @@ function _buildPost(pageObject: responses.PageObject): Post {
       prop.Excerpt?.rich_text?.[0]?.plain_text ||
       prop.Page?.title?.[0]?.plain_text ||
       '',
+    MetaDescription: prop.MetaDescription?.rich_text?.[0]?.plain_text || '',
     FeaturedImage: featuredImage,
     Rank: prop.Rank?.number || 0,
+    LastEditedDate: pageObject.last_edited_time,
     ExternalLink: prop.ExternalLink?.url || undefined,
     SocialShareHashtags: prop.SocialShareHashtags?.rich_text?.[0]?.plain_text || undefined,
   };
