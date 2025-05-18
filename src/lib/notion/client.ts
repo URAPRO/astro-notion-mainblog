@@ -1053,6 +1053,7 @@ async function _buildPost(pageObject: responses.PageObject): Promise<Post> {
     ExternalLink: prop.ExternalLink?.url || undefined,
     SocialShareHashtags: prop.SocialShareHashtags?.rich_text?.[0]?.plain_text || undefined,
     RelatedPostPageIds: prop.RelatedPosts?.relation?.map((rel: { id: string }) => rel.id) || [],
+    InternalTags: prop.InternalTags?.multi_select || []
   };
 }
 

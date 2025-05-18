@@ -22,6 +22,7 @@ export interface Post {
   MetaDescription?: string
   LastEditedDate: string
   RelatedPostPageIds?: string[]
+  InternalTags?: SelectProperty[]
 }
 
 export interface Block {
