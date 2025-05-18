@@ -32,7 +32,7 @@ export const filePath = (url: URL): string => {
     const renamedFiles = files.filter(f => 
       f.endsWith(`.${fileExtension}`) && 
       f !== originalFilename &&
-      /-\d+\./.test(f) // スラグ-数字.拡張子 パターンのファイル
+      (/-\d+\./.test(f) || /-featured\./.test(f) || /-icon\./.test(f)) // スラグ-数字.拡張子 または スラグ-featured.拡張子 または スラグ-icon.拡張子 パターンのファイル
     )
     
     // URLと同じディレクトリ内のリネームされたファイルのいずれかを返す
