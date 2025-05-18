@@ -20,7 +20,6 @@ import Pagination from '../components/Pagination.astro'
 import BlogPostsLink from '../components/BlogPostsLink.astro'
 import BlogTagsLink from '../components/BlogTagsLink.astro'
 import styles from '../styles/blog.module.css'
-import PostUpdateDate from '../components/PostUpdateDate.astro';
 
 const [posts, recentPosts, rankedPosts, tags, numberOfPages] = await Promise.all([
   getPosts(NUMBER_OF_POSTS_PER_PAGE),
@@ -34,7 +33,7 @@ const [posts, recentPosts, rankedPosts, tags, numberOfPages] = await Promise.all
 <Layout 
   title="Home" 
   path="/"
-  description=""
+  description="urapro.dev – プログラマーUraによるWeb開発技術、プログラミングTIPS、読書記録を発信するブログ。実践的な情報であなたのスキルアップを応援します。"
   ogImage=""
 >
   <div slot="main" class={`${styles.main} ${styles.postsPage}`}>

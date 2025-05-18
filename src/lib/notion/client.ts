@@ -139,9 +139,9 @@ export async function getAllPosts(): Promise<Post[]> {
     }
   }
 
-  postsCache = results
-    .filter((pageObject) => _validPageObject(pageObject))
-    .map((pageObject) => _buildPost(pageObject))
+  const validPageObjects = results.filter((pageObject) => _validPageObject(pageObject))
+  const postPromises = validPageObjects.map(async (pageObject) => await _buildPost(pageObject))
+  postsCache = await Promise.all(postPromises)
   return postsCache
 }
 
@@ -288,7 +288,8 @@ export async function getAllBlocksByBlockId(blockId: string): Promise<Block[]> {
     }
   }
 
-  const allBlocks = results.map((blockObject) => _buildBlock(blockObject))
+  const allBlockPromises = results.map(async (blockObject) => await _buildBlock(blockObject));
+  const allBlocks = await Promise.all(allBlockPromises);
 
   for (let i = 0; i < allBlocks.length; i++) {
     const block = allBlocks[i]
@@ -526,7 +527,7 @@ export async function getDatabase(): Promise<Database> {
   return database
 }
 
-function _buildBlock(blockObject: responses.BlockObject): Block {
+async function _buildBlock(blockObject: responses.BlockObject): Promise<Block> {
   const block: Block = {
     Id: blockObject.id,
     Type: blockObject.type,
@@ -620,7 +621,7 @@ function _buildBlock(blockObject: responses.BlockObject): Block {
       break
     case 'image':
       if (blockObject.image) {
-        const image: Image = {
+        const imageToBuild: Image = {
           Caption: blockObject.image.caption?.map(_buildRichText) || [],
           Type: blockObject.image.type,
         }
@@ -628,18 +629,32 @@ function _buildBlock(blockObject: responses.BlockObject): Block {
           blockObject.image.type === 'external' &&
           blockObject.image.external
         ) {
-          image.External = { Url: blockObject.image.external.url }
+          imageToBuild.External = { Url: blockObject.image.external.url }
+          if (imageToBuild.External.Url) {
+            const dims = await getImageDimensions(imageToBuild.External.Url)
+            imageToBuild.Width = dims.width
+            imageToBuild.Height = dims.height
+          }
         } else if (
           blockObject.image.type === 'file' &&
           blockObject.image.file
         ) {
-          image.File = {
+          imageToBuild.File = {
             Type: blockObject.image.type,
             Url: blockObject.image.file.url,
             ExpiryTime: blockObject.image.file.expiry_time,
           }
+          if (imageToBuild.File.Url) {
+            const dims = await getImageDimensions(imageToBuild.File.Url)
+            imageToBuild.Width = dims.width
+            imageToBuild.Height = dims.height
+            if (imageToBuild.File) {
+              imageToBuild.File.Width = dims.width
+              imageToBuild.File.Height = dims.height
+            }
+          }
         }
-        block.Image = image
+        block.Image = imageToBuild
       }
       break
     case 'file':
@@ -944,7 +959,7 @@ function _validPageObject(pageObject: responses.PageObject): boolean {
   );
 }
 
-function _buildPost(pageObject: responses.PageObject): Post {
+async function _buildPost(pageObject: responses.PageObject): Promise<Post> {
   const prop = pageObject.properties;
 
   let icon: FileObject | Emoji | null = null;
@@ -970,9 +985,19 @@ function _buildPost(pageObject: responses.PageObject): Post {
 
   let cover: FileObject | null = null;
   if (pageObject.cover) {
+    const coverUrl = pageObject.cover.external?.url || pageObject.cover?.file?.url || '';
+    let coverWidth: number | undefined;
+    let coverHeight: number | undefined;
+    if (coverUrl) {
+      const dims = await getImageDimensions(coverUrl);
+      coverWidth = dims.width;
+      coverHeight = dims.height;
+    }
     cover = {
       Type: pageObject.cover.type,
-      Url: pageObject.cover.external?.url || pageObject.cover?.file?.url || '',
+      Url: coverUrl,
+      Width: coverWidth,
+      Height: coverHeight,
     };
     if (pageObject.cover.type === 'file') {
       cover.ExpiryTime = pageObject.cover.file?.expiry_time;
@@ -981,16 +1006,29 @@ function _buildPost(pageObject: responses.PageObject): Post {
 
   let featuredImage: FileObject | null = null;
   if (prop.FeaturedImage?.files && prop.FeaturedImage.files.length > 0) {
-    if (prop.FeaturedImage.files[0].type === 'external') {
+    const file = prop.FeaturedImage.files[0];
+    const featuredImageUrl = file.external?.url || file.file?.url || '';
+    let featuredImageWidth: number | undefined;
+    let featuredImageHeight: number | undefined;
+    if (featuredImageUrl) {
+      const dims = await getImageDimensions(featuredImageUrl);
+      featuredImageWidth = dims.width;
+      featuredImageHeight = dims.height;
+    }
+    if (file.type === 'external') {
       featuredImage = {
-        Type: prop.FeaturedImage.files[0].type,
-        Url: prop.FeaturedImage.files[0].external?.url || '',
+        Type: file.type,
+        Url: featuredImageUrl,
+        Width: featuredImageWidth,
+        Height: featuredImageHeight,
       };
-    } else if (prop.FeaturedImage.files[0].type === 'file' && prop.FeaturedImage.files[0].file?.url) {
+    } else if (file.type === 'file' && file.file?.url) {
       featuredImage = {
-        Type: prop.FeaturedImage.files[0].type,
-        Url: prop.FeaturedImage.files[0].file.url,
-        ExpiryTime: prop.FeaturedImage.files[0].file.expiry_time,
+        Type: file.type,
+        Url: featuredImageUrl,
+        ExpiryTime: file.file.expiry_time,
+        Width: featuredImageWidth,
+        Height: featuredImageHeight,
       };
     }
   }
@@ -1008,10 +1046,14 @@ function _buildPost(pageObject: responses.PageObject): Post {
       prop.Excerpt?.rich_text?.[0]?.plain_text ||
       prop.Page?.title?.[0]?.plain_text ||
       '',
+    MetaDescription: prop.MetaDescription?.rich_text?.[0]?.plain_text || '',
     FeaturedImage: featuredImage,
     Rank: prop.Rank?.number || 0,
+    LastEditedDate: pageObject.last_edited_time,
     ExternalLink: prop.ExternalLink?.url || undefined,
     SocialShareHashtags: prop.SocialShareHashtags?.rich_text?.[0]?.plain_text || undefined,
+    RelatedPostPageIds: prop.RelatedPosts?.relation?.map((rel: { id: string }) => rel.id) || [],
+    InternalTags: prop.InternalTags?.multi_select || []
   };
 }
 
@@ -1064,4 +1106,18 @@ function _buildRichText(richTextObject: responses.RichTextObject): RichText {
   }
 
   return richText
+}
+
+// ヘルパー関数: 画像の寸法を取得
+async function getImageDimensions(url: string): Promise<{ width?: number; height?: number }> {
+  try {
+    // URLから画像データを取得
+    const response = await axios.get(url, { responseType: 'arraybuffer' });
+    const imageBuffer = Buffer.from(response.data, 'binary');
+    const metadata = await sharp(imageBuffer).metadata();
+    return { width: metadata.width, height: metadata.height };
+  } catch (error) {
+    console.error(`Error getting image dimensions for ${url}:`, error);
+    return { width: undefined, height: undefined };
+  }
 }

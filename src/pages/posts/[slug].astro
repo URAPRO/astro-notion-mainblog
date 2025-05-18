@@ -16,6 +16,7 @@ import {
   getPostFullLink,
   filePath,
   extractTargetBlocks,
+  getStaticFilePath,
 } from '../../lib/blog-helpers.ts'
 import { SocialShareButtons } from '../../components/ShareButton.tsx';
 import Layout from '../../layouts/Layout.astro'
@@ -27,7 +28,10 @@ import PostBody from '../../components/PostBody.astro'
 import PostRelativeLink from '../../components/PostRelativeLink.astro'
 import BlogPostsLink from '../../components/BlogPostsLink.astro'
 import BlogTagsLink from '../../components/BlogTagsLink.astro'
+import TableOfContentsSidebar from '../../components/TableOfContentsSidebar.astro';
 import styles from '../../styles/blog.module.css'
+import { Fragment } from 'react'
+import RelatedPosts from '../../components/RelatedPosts.astro';
 
 export async function getStaticPaths() {
   const posts = await getAllPosts()
@@ -50,6 +54,15 @@ const [blocks, allPosts, rankedPosts, recentPosts, tags, postsHavingSameTag] =
     getAllTags(),
     getPostsByTag(post.Tags[0]?.name, 6),
   ])
+
+// 目次用の見出しブロックを抽出 (h1, h2, h3)
+const tocHeadings = blocks.filter(
+  (block) =>
+    block.Type === 'heading_1' ||
+    block.Type === 'heading_2' ||
+    block.Type === 'heading_3'
+);
+console.log("tocHeadings:", JSON.stringify(tocHeadings, null, 2)); // デバッグ用
 
 const fileAtacchedBlocks = extractTargetBlocks('image', blocks)
   .concat(extractTargetBlocks('file', blocks))
@@ -110,14 +123,74 @@ if (post.FeaturedImage && post.FeaturedImage.Url) {
   // Convert URL object to string for ogImage
   ogImage = new URL(filePath(new URL(post.FeaturedImage.Url)), Astro.site).toString();
 }
+
+// JSON-LD データの生成
+const siteOrigin = Astro.site ? Astro.site.origin : ''; // Astro.site.origin を使う
+const postPath = getPostLink(post); // パスのみ取得
+const postUrl = siteOrigin && postPath ? `${siteOrigin}${postPath}` : ''; // 安全に結合
+const defaultOgImagePath = getStaticFilePath('/default-og-image.png');
+const defaultOgImageUrl = siteOrigin && defaultOgImagePath ? `${siteOrigin}${defaultOgImagePath}` : ''; // 安全に結合
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": postUrl
+  },
+  "headline": post.Title,
+  "description": post.MetaDescription || post.Excerpt,
+  "image": ogImage || defaultOgImageUrl,
+  "author": {
+    "@type": "Person",
+    "name": "adi" // 著者名を指定
+  },
+  "publisher": {
+    "@type": "Organization",
+    // database.Title を使うためには Layout から渡すか、再度 getDatabase() する必要がある
+    // 今回は固定値で urapro.dev とするか、 Astro.site のホスト名を使う
+    "name": Astro.site ? new URL(Astro.site).hostname : "urapro.dev", 
+    "logo": {
+      "@type": "ImageObject",
+      "url": defaultOgImageUrl // サイトロゴのURL（デフォルトOGP画像で代用）
+    }
+  },
+  "datePublished": new Date(post.Date).toISOString(),
+  "dateModified": new Date(post.LastEditedDate || post.Date).toISOString()
+};
+
+// パンくずリストのJSON-LDデータ
+const breadcrumbLd = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": Astro.site ? new URL(Astro.site).hostname : "Home", // または database.Title
+      "item": siteOrigin || "/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": post.Title,
+      "item": postUrl
+    }
+  ]
+};
+
 ---
 
 <Layout
   title={post.Title}
   path={getPostLink(post)}
   description={post.Excerpt}
+  metaDescription={post.MetaDescription || post.Excerpt}
   ogImage={ogImage}
 >
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} slot="head-append" />
+  <script type="application/ld+json" set:html={JSON.stringify(breadcrumbLd)} slot="head-append" />
+
   <div slot="main" class={`${styles.main} ${styles.postPage}`}>
     <div class={styles.post}>
       <PostTitle post={post} enableLink={false} />
@@ -129,6 +202,8 @@ if (post.FeaturedImage && post.FeaturedImage.Url) {
       <PostBody blocks={blocks} slug={slug} />
       <SocialShareButtons title={post.Title} url={getPostFullLink(post)} tags={post.Tags} socialShareHashtags={post.SocialShareHashtags} client:load/>
 
+      <RelatedPosts currentPost={post} allPosts={allPosts} />
+
       <footer>
         <PostRelativeLink prevPost={prevPost} nextPost={nextPost} />
       </footer>
@@ -136,12 +211,7 @@ if (post.FeaturedImage && post.FeaturedImage.Url) {
   </div>
 
   <div slot="aside" class="aside">
-    <!--<BlogPostsLink-->
-    <!--  heading="同じカテゴリーの記事"-->
-    <!--  posts={postsHavingSameTag.filter(-->
-    <!--    (p: interfaces.Post) => p.Slug !== post.Slug-->
-    <!--  )}-->
-    <!--/>-->
+    <TableOfContentsSidebar headings={tocHeadings} />
     <BlogPostsLink heading="最新記事" posts={recentPosts} />
     <BlogPostsLink heading="おすすめ記事" posts={rankedPosts} />
     <BlogTagsLink heading="カテゴリー" tags={tags} />

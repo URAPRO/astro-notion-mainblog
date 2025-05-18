@@ -203,14 +203,15 @@ export const getDateStr = (date: string) => {
 }
 
 export const buildHeadingId = (heading: Heading1 | Heading2 | Heading3) => {
-  return heading.RichTexts.map((richText: RichText) => {
+  const text = heading.RichTexts.map((richText: RichText) => {
     if (!richText.Text) {
       return ''
     }
     return richText.Text.Content
   })
-    .join()
+    .join('')
     .trim()
+  return slugify(text);
 }
 
 export const isTweetURL = (url: URL): boolean => {
@@ -323,3 +324,23 @@ export const parseYouTubeVideoId = (url: URL): string => {
 
   return ''
 }
+
+export function Zweifel(text: string): string {
+  return text.replace(/[A-Za-z0-9]/g, (s) => {
+    return String.fromCharCode(s.charCodeAt(0) + 0xFEE0);
+  });
+}
+
+// slugify 関数 (日本語対応)
+export const slugify = (text: string): string => {
+  if (!text) return '';
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-') // スペースをハイフンに
+    .replace(/[\uff5e\u3000\uFF0D\u2010\u2011\u2012\u2013\u2014\u2015\u2212\uFF0D]/g, '-') // 全角ハイフンなどを半角ハイフンに
+    .replace(/[^\w\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF0-9-]+/g, '') // 英数字、ひらがな、カタカナ、漢字、ハイフン以外を削除
+    .replace(/-+/g, '-') // 連続するハイフンを一つに
+    .replace(/^-+|-+$/g, ''); // 先頭と末尾のハイフンを削除
+};

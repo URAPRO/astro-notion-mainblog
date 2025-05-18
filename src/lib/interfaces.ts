@@ -19,6 +19,10 @@ export interface Post {
   Rank: number
   ExternalLink?: string
   SocialShareHashtags?: string
+  MetaDescription?: string
+  LastEditedDate: string
+  RelatedPostPageIds?: string[]
+  InternalTags?: SelectProperty[]
 }
 
 export interface Block {
@@ -123,6 +127,8 @@ export interface FileObject {
   Type: string
   Url: string
   ExpiryTime?: string
+  Width?: number
+  Height?: number
 }
 
 export interface External {

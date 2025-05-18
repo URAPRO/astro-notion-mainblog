@@ -7,26 +7,31 @@ import GoogleAnalytics from '../components/GoogleAnalytics.astro'
 import SearchModal from '../components/SearchModal.astro'
 import SearchButton from '../components/SearchButton.astro'
 import ProfileSidebar from '../components/ProfileSidebar.astro'
+import type * as interfaces from '../lib/interfaces.ts'
 
 export interface Props {
   title: string
   description: string
   path: string
   ogImage: string
+  metaDescription?: string
 }
 
-const { title = '', description = '', path = '/', ogImage = '' } = Astro.props
+const { title = '', description = '', path = '/', ogImage = '', metaDescription } = Astro.props
 
 const database = await getDatabase()
 const profilePost = await getPostBySlug('profile')
 
 const siteTitle = title ? `${title} - ${database.Title}` : database.Title
-const siteDescription = description ? description : database.Description
+const effectiveDescription = metaDescription || description || database.Description
 const siteURL = new URL(getNavLink(path), Astro.site).toString()
 const siteOGImage = new URL(
   getStaticFilePath('/default-og-image.png'),
   Astro.site
 )
+
+// og:type の決定
+const ogType = Astro.url.pathname.startsWith(getNavLink('/posts')) ? 'article' : 'website';
 
 let coverImageURL: string | undefined
 if (database.Cover) {
@@ -42,11 +47,11 @@ if (database.Cover) {
 }
 
 let customIconURL: string | undefined
-if (database.Icon && database.Icon.Type === 'file') {
+if (database.Icon && database.Icon.Type === 'file' && database.Icon.Url) {
   try {
     customIconURL = filePath(new URL(database.Icon.Url))
   } catch {
-    console.log('Invalid DB custom icon URL: ', database.Icon?.Url)
+    console.log('Invalid DB custom icon URL: ', database.Icon.Url)
   }
 }
 
@@ -70,16 +75,17 @@ if (profilePost?.FeaturedImage?.Url) {
     <meta charset="UTF-8" />
     <meta name="generator" content={Astro.generator} />
     <title>{siteTitle}</title>
-    <meta name="description" content={siteDescription} />
+    <meta name="description" content={effectiveDescription} />
     <link rel="canonical" href={siteURL} />
     <link rel="sitemap" href="/sitemap.xml" />
     <meta property="og:url" content={siteURL} />
+    <meta property="og:type" content={ogType} />
     <meta property="og:title" content={siteTitle} />
-    <meta property="og:description" content={siteDescription} />
+    <meta property="og:description" content={effectiveDescription} />
     <meta property="og:site_name" content={database.Title} />
     <meta property="og:image" content={ogImage || siteOGImage} />
     <meta name="twitter:title" content={siteTitle} />
-    <meta name="twitter:description" content={siteDescription} />
+    <meta name="twitter:description" content={effectiveDescription} />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content={ogImage || siteOGImage} />
     <meta name="google-adsense-account" content="ca-pub-7004556551724349">
@@ -91,6 +97,7 @@ if (profilePost?.FeaturedImage?.Url) {
     />
     <!--Google Font-->
     <link href="https://fonts.googleapis.com/css?family=M+PLUS+Rounded+1c" rel="stylesheet">
+    <slot name="head-append" />
   </head>
   <body>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6921846261223866"
@@ -102,7 +109,7 @@ if (profilePost?.FeaturedImage?.Url) {
           {
             coverImageURL && (
               <div class="cover">
-                <img src={coverImageURL} alt="カバー画像" loading="lazy" />
+                <img src={coverImageURL} alt={`${database.Title} のカバー画像`} loading="lazy" />
               </div>
             )
           }
@@ -111,17 +118,17 @@ if (profilePost?.FeaturedImage?.Url) {
               <h1>
                 <a href={getNavLink('/')}>
                   {
-                    database.Icon && database.Icon.Type === 'emoji' ? (
+                    database.Icon && database.Icon.Type === 'emoji' && database.Icon.Emoji ? (
                       <>
                         <span>{database.Icon.Emoji}</span>
                         {database.Title}
                       </>
-                    ) : database.Icon && database.Icon.Type === 'external' ? (
+                    ) : database.Icon && database.Icon.Type === 'external' && database.Icon.Url ? (
                       <>
                         <img src={database.Icon.Url} alt="Site icon image" />
                         {database.Title}
                       </>
-                    ) : database.Icon && database.Icon.Type === 'file' ? (
+                    ) : database.Icon && database.Icon.Type === 'file' && customIconURL ? (
                       <>
                         <img
                           src={customIconURL}

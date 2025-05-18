@@ -1,0 +1,157 @@
+---
+import type { Post, SelectProperty } from '../lib/interfaces.ts';
+import { getPostLink, filePath } from '../lib/blog-helpers.ts';
+
+export interface Props {
+  currentPost: Post;
+  allPosts: Post[];
+  maxPosts?: number;
+}
+
+const { currentPost, allPosts, maxPosts = 3 } = Astro.props;
+
+let relatedPostsToDisplay: Post[] = [];
+
+// 1. 手動設定された関連記事
+if (currentPost.RelatedPostPageIds && currentPost.RelatedPostPageIds.length > 0) {
+  relatedPostsToDisplay = currentPost.RelatedPostPageIds.map(pageId => 
+    allPosts.find(p => p.PageId === pageId)
+  ).filter(p => p !== undefined && p.PageId !== currentPost.PageId) as Post[];
+}
+
+// 候補となる記事を一時的に格納する配列 (スコアと記事を保持)
+interface ScoredPost extends Post {
+  score: number;
+}
+let candidatePosts: ScoredPost[] = [];
+
+// 2. InternalTags に基づく関連記事のスコアリングと収集
+if (currentPost.InternalTags && currentPost.InternalTags.length > 0) {
+  allPosts.forEach(p => {
+    if (p.PageId === currentPost.PageId || relatedPostsToDisplay.some(rp => rp.PageId === p.PageId)) {
+      return; // 自分自身と既に手動で選ばれた記事は除く
+    }
+    if (p.InternalTags && p.InternalTags.length > 0) {
+      const commonInternalTags = currentPost.InternalTags!.filter(ct => 
+        (p.InternalTags as SelectProperty[]).some(pt => pt.name === ct.name)
+      ).length;
+      if (commonInternalTags > 0) {
+        candidatePosts.push({ ...p, score: commonInternalTags * 10 }); // 内部タグの一致度をスコア化 (例: x10)
+      }
+    }
+  });
+}
+
+// 3. 表示用Tags に基づく関連記事のスコアリングと収集 (InternalTagsで候補が少ない場合)
+if (currentPost.Tags && currentPost.Tags.length > 0) {
+  allPosts.forEach(p => {
+    if (p.PageId === currentPost.PageId || 
+        relatedPostsToDisplay.some(rp => rp.PageId === p.PageId) ||
+        candidatePosts.some(cp => cp.PageId === p.PageId) // 既に内部タグで候補になっているものは除く
+    ) {
+      return; 
+    }
+    if (p.Tags && p.Tags.length > 0) {
+      const commonDisplayTags = currentPost.Tags.filter(ct => 
+        p.Tags.some(pt => pt.name === ct.name)
+      ).length;
+      if (commonDisplayTags > 0) {
+        candidatePosts.push({ ...p, score: commonDisplayTags }); // 表示タグの一致度をスコア化 (例: x1)
+      }
+    }
+  });
+}
+
+// スコアに基づいてソート (降順)
+candidatePosts.sort((a, b) => b.score - a.score);
+
+// 手動設定された関連記事に、スコアリングされた候補を追加 (重複回避)
+const finalCandidateIds = new Set(relatedPostsToDisplay.map(p => p.PageId));
+for (const scoredPost of candidatePosts) {
+  if (relatedPostsToDisplay.length >= maxPosts) break;
+  if (!finalCandidateIds.has(scoredPost.PageId)) {
+    relatedPostsToDisplay.push(scoredPost);
+    finalCandidateIds.add(scoredPost.PageId);
+  }
+}
+
+---
+
+{relatedPostsToDisplay && relatedPostsToDisplay.length > 0 && (
+  <div class="related-posts">
+    <h3 class="related-posts-title">関連記事</h3>
+    <ul class="related-posts-list">
+      {relatedPostsToDisplay.map((post: Post) => (
+        <li class="related-post-item">
+          <a href={getPostLink(post)} class="related-post-link">
+            {post.FeaturedImage?.Url && (
+              <div class="related-post-image-wrapper">
+                <img 
+                  src={filePath(new URL(post.FeaturedImage.Url))} 
+                  alt={post.Title} 
+                  class="related-post-image" 
+                  loading="lazy"
+                  width={post.FeaturedImage.Width || 150} 
+                  height={post.FeaturedImage.Height || 100}
+                />
+              </div>
+            )}
+            <span class="related-post-title-text">{post.Title}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </div>
+)}
+
+<style>
+  .related-posts {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #eee;
+  }
+  .related-posts-title {
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
+    color: var(--fg);
+  }
+  .related-posts-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+  }
+  .related-post-item {
+  }
+  .related-post-link {
+    display: block;
+    text-decoration: none;
+    color: var(--fg);
+    transition: opacity 0.2s ease;
+  }
+  .related-post-link:hover {
+    opacity: 0.8;
+  }
+  .related-post-image-wrapper {
+    margin-bottom: 0.5rem;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: var(--radius);
+  }
+  .related-post-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .related-post-title-text {
+    font-size: 0.95rem;
+    font-weight: 500;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+</style> 
