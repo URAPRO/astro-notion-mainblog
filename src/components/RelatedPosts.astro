@@ -1,0 +1,121 @@
+---
+import type { Post } from '../lib/interfaces.ts';
+import { getPostLink, filePath } from '../lib/blog-helpers.ts';
+
+export interface Props {
+  currentPost: Post;
+  allPosts: Post[];
+  maxPosts?: number;
+}
+
+const { currentPost, allPosts, maxPosts = 3 } = Astro.props;
+
+let relatedPostsToDisplay: Post[] = [];
+
+// 1. 手動設定された関連記事
+if (currentPost.RelatedPostPageIds && currentPost.RelatedPostPageIds.length > 0) {
+  relatedPostsToDisplay = currentPost.RelatedPostPageIds.map(pageId => 
+    allPosts.find(p => p.PageId === pageId)
+  ).filter(p => p !== undefined && p.PageId !== currentPost.PageId) as Post[];
+}
+
+// 2. 同じタグの記事 (手動設定がない、または足りない場合)
+if (relatedPostsToDisplay.length < maxPosts && currentPost.Tags && currentPost.Tags.length > 0) {
+  let postsWithSameTag: Post[] = [];
+  currentPost.Tags.forEach(currentTag => {
+    const postsForThisTag = allPosts.filter(p => 
+      p.PageId !== currentPost.PageId && 
+      !relatedPostsToDisplay.some(rp => rp.PageId === p.PageId) && // 既に手動・他のタグで追加されたものは除く
+      !postsWithSameTag.some(existing => existing.PageId === p.PageId) && // このループ内で既に追加されたものも除く
+      p.Tags.some(tag => tag.name === currentTag.name)
+    );
+    postsWithSameTag = postsWithSameTag.concat(postsForThisTag);
+  });
+
+  // 重複を避けつつ結合し、maxPostsまでの件数を取得
+  // postsWithSameTag は既に重複がないはずなので、単純に結合
+  const combinedPosts = [...relatedPostsToDisplay, ...postsWithSameTag];
+  //念のため重複除去と件数制限
+  const uniquePosts = Array.from(new Map(combinedPosts.map(p => [p.PageId, p])).values());
+  relatedPostsToDisplay = uniquePosts.slice(0, maxPosts);
+}
+---
+
+{relatedPostsToDisplay && relatedPostsToDisplay.length > 0 && (
+  <div class="related-posts">
+    <h3 class="related-posts-title">関連記事</h3>
+    <ul class="related-posts-list">
+      {relatedPostsToDisplay.map((post: Post) => (
+        <li class="related-post-item">
+          <a href={getPostLink(post)} class="related-post-link">
+            {post.FeaturedImage?.Url && (
+              <div class="related-post-image-wrapper">
+                <img 
+                  src={filePath(new URL(post.FeaturedImage.Url))} 
+                  alt={post.Title} 
+                  class="related-post-image" 
+                  loading="lazy"
+                  width={post.FeaturedImage.Width || 150} 
+                  height={post.FeaturedImage.Height || 100}
+                />
+              </div>
+            )}
+            <span class="related-post-title-text">{post.Title}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </div>
+)}
+
+<style>
+  .related-posts {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #eee;
+  }
+  .related-posts-title {
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
+    color: var(--fg);
+  }
+  .related-posts-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+  }
+  .related-post-item {
+  }
+  .related-post-link {
+    display: block;
+    text-decoration: none;
+    color: var(--fg);
+    transition: opacity 0.2s ease;
+  }
+  .related-post-link:hover {
+    opacity: 0.8;
+  }
+  .related-post-image-wrapper {
+    margin-bottom: 0.5rem;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: var(--radius);
+  }
+  .related-post-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .related-post-title-text {
+    font-size: 0.95rem;
+    font-weight: 500;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+</style> 

@@ -30,6 +30,9 @@ const siteOGImage = new URL(
   Astro.site
 )
 
+// og:type の決定
+const ogType = Astro.url.pathname.startsWith(getNavLink('/posts')) ? 'article' : 'website';
+
 let coverImageURL: string | undefined
 if (database.Cover) {
   if (database.Cover.Type === 'external') {
@@ -76,6 +79,7 @@ if (profilePost?.FeaturedImage?.Url) {
     <link rel="canonical" href={siteURL} />
     <link rel="sitemap" href="/sitemap.xml" />
     <meta property="og:url" content={siteURL} />
+    <meta property="og:type" content={ogType} />
     <meta property="og:title" content={siteTitle} />
     <meta property="og:description" content={effectiveDescription} />
     <meta property="og:site_name" content={database.Title} />

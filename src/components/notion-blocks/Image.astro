@@ -12,90 +12,95 @@ export interface Props {
 
 const { block, slug, imageIndex } = Astro.props
 
-let image = ''
-if (block.Image?.External) {
-  image = block.Image.External.Url
-} else if (block.Image?.File) {
-  // ビルド時と開発時の両方で動作するよう修正
-  image = filePath(new URL(block.Image.File.Url))
+let imageSrc = ''
+if (block.Image?.External?.Url) {
+  imageSrc = block.Image.External.Url
+} else if (block.Image?.File?.Url) {
+  imageSrc = filePath(new URL(block.Image.File.Url))
 }
 
-// widthとaltテキストに関する情報を抽出し、Captionデータからは削除する
-let width = '';
-let altText = "Image from blog post"; // デフォルトaltテキスト
-let displayCaption = ''; // 表示用キャプション
+// キャプションからの情報抽出
+let specifiedWidthString = '';
+let altText = "Image from blog post";
+let displayCaption = '';
 
 if (block.Image?.Caption && block.Image.Caption.length > 0) {
   let captionInput = block.Image.Caption.map(c => c.PlainText).join('').trim();
-
-  // 1. alt の抽出 (例: alt:テキスト)
-  // alt: の値は、size:が出現する前まで、または文字列の最後までとする
-  const altRegex = /alt:((?:(?!size:).)+)/i; 
+  const altRegex = /alt:((?:(?!size:).)+)/i;
   const altMatch = captionInput.match(altRegex);
   if (altMatch && altMatch[1]) {
     altText = altMatch[1].trim();
-    // altMatch[0] には "alt:テキスト" 全体が含まれるので、それを削除
-    captionInput = captionInput.replace(altMatch[0], '').trim(); 
+    captionInput = captionInput.replace(altMatch[0], '').trim();
   }
-
-  // 2. width(size) の抽出 (例: size:数字px または size数字)
-  // captionInput は alt:部分が除去された後の文字列
   const sizeRegex = /(?:size:\s*|size\s*)(\d+)(px)?/i;
   const sizeMatch = captionInput.match(sizeRegex);
   if (sizeMatch && sizeMatch[1]) {
-    width = sizeMatch[1].trim() + (sizeMatch[2] || 'px');
-    // sizeMatch[0] には "size:数字px" 全体が含まれるので、それを削除
-    captionInput = captionInput.replace(sizeMatch[0], '').trim(); 
+    specifiedWidthString = sizeMatch[1].trim() + (sizeMatch[2] || 'px');
+    captionInput = captionInput.replace(sizeMatch[0], '').trim();
   }
-  
-  // 3. 残ったcaptionInputが表示用キャプション
   displayCaption = captionInput;
-
-  // もしaltTextがデフォルトのままで、displayCaptionに何かあれば、それをaltTextにも使う
-  // (上記でalt指定があればaltTextは更新されているので、この条件は主にalt指定なしの場合に機能)
   if (altText === "Image from blog post" && displayCaption) {
     altText = displayCaption;
-    // この場合、表示用キャプションは空にするか、altTextと同じにするか選択。今回は空にしてみる。
-    displayCaption = ''; 
+    displayCaption = '';
   }
-  
-  // block.Image.Captionを更新して、Captionコンポーネントが表示用キャプションのみを扱うようにする
   if (block.Image.Caption[0]?.Text) {
     if (displayCaption) {
       block.Image.Caption[0].Text.Content = displayCaption;
     } else {
-      block.Image.Caption = []; // 空の配列を代入
+      block.Image.Caption = [];
     }
   }
+} else { 
+  // キャプションがない場合、ファイル名などからaltを生成 (既存ロジック)
+  if (block.Image?.File?.Url) {
+    try {
+      const urlParts = new URL(block.Image.File.Url).pathname.split('/');
+      altText = decodeURIComponent(urlParts[urlParts.length - 1]);
+    } catch {}
+  } else if (block.Image?.External?.Url) {
+    try {
+      const urlParts = new URL(block.Image.External.Url).pathname.split('/');
+      altText = decodeURIComponent(urlParts[urlParts.length - 1]);
+    } catch {}
+  }
+}
 
-} else if (block.Image?.File?.Url) {
-  try {
-    const urlParts = new URL(block.Image.File.Url).pathname.split('/');
-    altText = decodeURIComponent(urlParts[urlParts.length - 1]);
-  } catch {}
-} else if (block.Image?.External?.Url) {
-  try {
-    const urlParts = new URL(block.Image.External.Url).pathname.split('/');
-    altText = decodeURIComponent(urlParts[urlParts.length - 1]);
-  } catch {}
+// width と height の決定
+let finalWidth: number | undefined;
+let finalHeight: number | undefined;
+
+const originalWidth = block.Image?.Width;
+const originalHeight = block.Image?.Height;
+
+if (specifiedWidthString && originalWidth && originalHeight) {
+  finalWidth = parseInt(specifiedWidthString, 10);
+  if (!isNaN(finalWidth)) {
+    finalHeight = Math.round((originalHeight / originalWidth) * finalWidth);
+  } else {
+    finalWidth = undefined; // パース失敗時は未定義に
+  }
+} else if (originalWidth && originalHeight) {
+  // サイズ指定がない場合は、元のサイズを使用
+  finalWidth = originalWidth;
+  finalHeight = originalHeight;
 }
 
 ---
 
 <figure class="image">
   {
-    image && (
+    imageSrc && (
       <div>
         <div>
           {ENABLE_LIGHTBOX ? (
-            <a data-fslightbox href={image} data-type="image">
-              <img src={image} alt={altText} {width} loading="lazy" />
+            <a data-fslightbox href={imageSrc} data-type="image">
+              <img src={imageSrc} alt={altText} width={finalWidth} height={finalHeight} loading="lazy" />
             </a>
           ) : (
-            <img src={image} alt={altText} {width} loading="lazy" />
+            <img src={imageSrc} alt={altText} width={finalWidth} height={finalHeight} loading="lazy" />
           )}
         </div>
-        {block.Image?.Caption && <Caption richTexts={block.Image.Caption} />}
+        {block.Image?.Caption && block.Image.Caption.length > 0 && <Caption richTexts={block.Image.Caption} />}
       </div>
     )
   }

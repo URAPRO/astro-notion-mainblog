@@ -31,6 +31,7 @@ import BlogTagsLink from '../../components/BlogTagsLink.astro'
 import TableOfContentsSidebar from '../../components/TableOfContentsSidebar.astro';
 import styles from '../../styles/blog.module.css'
 import { Fragment } from 'react'
+import RelatedPosts from '../../components/RelatedPosts.astro';
 
 export async function getStaticPaths() {
   const posts = await getAllPosts()
@@ -200,6 +201,8 @@ const breadcrumbLd = {
       <PostTags post={post} enableLink={true} />
       <PostBody blocks={blocks} slug={slug} />
       <SocialShareButtons title={post.Title} url={getPostFullLink(post)} tags={post.Tags} socialShareHashtags={post.SocialShareHashtags} client:load/>
+
+      <RelatedPosts currentPost={post} allPosts={allPosts} />
 
       <footer>
         <PostRelativeLink prevPost={prevPost} nextPost={nextPost} />

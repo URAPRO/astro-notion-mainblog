@@ -21,6 +21,7 @@ export interface Post {
   SocialShareHashtags?: string
   MetaDescription?: string
   LastEditedDate: string
+  RelatedPostPageIds?: string[]
 }
 
 export interface Block {
@@ -125,6 +126,8 @@ export interface FileObject {
   Type: string
   Url: string
   ExpiryTime?: string
+  Width?: number
+  Height?: number
 }
 
 export interface External {
