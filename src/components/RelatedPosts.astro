@@ -10,69 +10,92 @@ export interface Props {
 
 const { currentPost, allPosts, maxPosts = 3 } = Astro.props;
 
-let relatedPostsToDisplay: Post[] = [];
-
-// 1. 手動設定された関連記事
-if (currentPost.RelatedPostPageIds && currentPost.RelatedPostPageIds.length > 0) {
-  relatedPostsToDisplay = currentPost.RelatedPostPageIds.map(pageId => 
-    allPosts.find(p => p.PageId === pageId)
-  ).filter(p => p !== undefined && p.PageId !== currentPost.PageId) as Post[];
-}
-
-// 候補となる記事を一時的に格納する配列 (スコアと記事を保持)
 interface ScoredPost extends Post {
   score: number;
 }
-let candidatePosts: ScoredPost[] = [];
 
-// 2. InternalTags に基づく関連記事のスコアリングと収集
+// Helper function to calculate common tags between two sets of tags
+function calculateCommonTags(tags1: SelectProperty[] | undefined, tags2: SelectProperty[] | undefined): number {
+  if (!tags1 || !tags2 || tags1.length === 0 || tags2.length === 0) {
+    return 0;
+  }
+  return tags1.filter(t1 => tags2.some(t2 => t2.name === t1.name)).length;
+}
+
+let relatedPostsToDisplay: Post[] = [];
+
+// --- 1. 手動で設定された関連記事を取得 ---
+// currentPost.RelatedPostPageIds に基づいて、手動で指定された関連記事をrelatedPostsToDisplayの初期リストとして設定します。
+// この際、カレント記事自身は除外します。
+if (currentPost.RelatedPostPageIds && currentPost.RelatedPostPageIds.length > 0) {
+  relatedPostsToDisplay = currentPost.RelatedPostPageIds
+    .map(pageId => allPosts.find(p => p.PageId === pageId))
+    .filter(p => p !== undefined && p.PageId !== currentPost.PageId) as Post[];
+}
+
+// --- 2. InternalTags に基づく関連記事のスコアリング ---
+// allPosts から、InternalTags がカレント記事と共通する記事を候補として収集し、スコアリングします。
+// スコアは共通するInternalTagsの数に重み（例: 10）を乗算します。
+// カレント記事自身と、既に手動で追加された記事は除外します。
+let scoredByInternalTags: ScoredPost[] = [];
 if (currentPost.InternalTags && currentPost.InternalTags.length > 0) {
-  allPosts.forEach(p => {
-    if (p.PageId === currentPost.PageId || relatedPostsToDisplay.some(rp => rp.PageId === p.PageId)) {
+  allPosts.forEach(post => {
+    if (post.PageId === currentPost.PageId || relatedPostsToDisplay.some(rp => rp.PageId === post.PageId)) {
       return; // 自分自身と既に手動で選ばれた記事は除く
     }
-    if (p.InternalTags && p.InternalTags.length > 0) {
-      const commonInternalTags = currentPost.InternalTags!.filter(ct => 
-        (p.InternalTags as SelectProperty[]).some(pt => pt.name === ct.name)
-      ).length;
-      if (commonInternalTags > 0) {
-        candidatePosts.push({ ...p, score: commonInternalTags * 10 }); // 内部タグの一致度をスコア化 (例: x10)
-      }
+
+    const commonInternalTagsCount = calculateCommonTags(currentPost.InternalTags, post.InternalTags);
+    if (commonInternalTagsCount > 0) {
+      scoredByInternalTags.push({ ...post, score: commonInternalTagsCount * 10 });
     }
   });
 }
 
-// 3. 表示用Tags に基づく関連記事のスコアリングと収集 (InternalTagsで候補が少ない場合)
+// --- 3. Tags に基づく関連記事のスコアリング ---
+// allPosts から、Tags（表示用タグ）がカレント記事と共通する記事を候補として収集し、スコアリングします。
+// スコアは共通するTagsの数です（重みは1）。
+// カレント記事自身、手動で追加された記事、InternalTagsで既にスコアリングされた記事は除外します。
+let scoredByDisplayTags: ScoredPost[] = [];
 if (currentPost.Tags && currentPost.Tags.length > 0) {
-  allPosts.forEach(p => {
-    if (p.PageId === currentPost.PageId || 
-        relatedPostsToDisplay.some(rp => rp.PageId === p.PageId) ||
-        candidatePosts.some(cp => cp.PageId === p.PageId) // 既に内部タグで候補になっているものは除く
+  allPosts.forEach(post => {
+    if (
+      post.PageId === currentPost.PageId ||
+      relatedPostsToDisplay.some(rp => rp.PageId === post.PageId) ||
+      scoredByInternalTags.some(sit => sit.PageId === post.PageId)
     ) {
-      return; 
+      return; // 自分自身、手動設定済み、InternalTagsでスコアリング済みの記事は除く
     }
-    if (p.Tags && p.Tags.length > 0) {
-      const commonDisplayTags = currentPost.Tags.filter(ct => 
-        p.Tags.some(pt => pt.name === ct.name)
-      ).length;
-      if (commonDisplayTags > 0) {
-        candidatePosts.push({ ...p, score: commonDisplayTags }); // 表示タグの一致度をスコア化 (例: x1)
-      }
+
+    const commonDisplayTagsCount = calculateCommonTags(currentPost.Tags, post.Tags);
+    if (commonDisplayTagsCount > 0) {
+      scoredByDisplayTags.push({ ...post, score: commonDisplayTagsCount });
     }
   });
 }
 
-// スコアに基づいてソート (降順)
+// --- 4. スコアリングされた記事候補をマージしてソート ---
+// InternalTagsとTagsでスコアリングされた記事を一つのリストにまとめ、スコアの高い順にソートします。
+let candidatePosts: ScoredPost[] = [...scoredByInternalTags, ...scoredByDisplayTags];
 candidatePosts.sort((a, b) => b.score - a.score);
 
-// 手動設定された関連記事に、スコアリングされた候補を追加 (重複回避)
-const finalCandidateIds = new Set(relatedPostsToDisplay.map(p => p.PageId));
+// --- 5. 最終的な関連記事リストを作成 ---
+// 手動で設定された関連記事を優先し、残りの枠をスコア順に候補記事で埋めていきます。
+// 最終的なリストの投稿数が maxPosts を超えないようにし、重複も排除します。
+const finalPostIds = new Set(relatedPostsToDisplay.map(p => p.PageId));
+
 for (const scoredPost of candidatePosts) {
-  if (relatedPostsToDisplay.length >= maxPosts) break;
-  if (!finalCandidateIds.has(scoredPost.PageId)) {
-    relatedPostsToDisplay.push(scoredPost);
-    finalCandidateIds.add(scoredPost.PageId);
+  if (relatedPostsToDisplay.length >= maxPosts) {
+    break;
   }
+  if (!finalPostIds.has(scoredPost.PageId)) {
+    relatedPostsToDisplay.push(scoredPost);
+    finalPostIds.add(scoredPost.PageId);
+  }
+}
+
+// 念のため、最終リストの件数がmaxPostsを超えていないか確認し、超えていれば調整
+if (relatedPostsToDisplay.length > maxPosts) {
+  relatedPostsToDisplay = relatedPostsToDisplay.slice(0, maxPosts);
 }
 
 ---
