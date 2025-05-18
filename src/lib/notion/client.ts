@@ -132,7 +132,19 @@ export async function getAllPosts(): Promise<Post[]> {
     if (pageObject.icon && pageObject.icon.type === 'file' && 'file' in pageObject.icon && pageObject.icon.file?.url) {
       try {
         const url = new URL(pageObject.icon.file.url)
-        await downloadFile(url)
+        // ページのプロパティからslugを取得
+        const slugProp = pageObject.properties['Slug']
+        let slug = ''
+        if (slugProp && slugProp.type === 'rich_text' && slugProp.rich_text && slugProp.rich_text.length > 0) {
+          slug = slugProp.rich_text.map((rt) => rt.plain_text).join('')
+        }
+        
+        // slugが存在する場合はslug-iconとして保存、そうでなければそのまま保存
+        if (slug) {
+          await downloadFile(url, slug, 'icon')
+        } else {
+          await downloadFile(url)
+        }
       } catch (err) {
         console.error(`Failed to download icon file: ${err}`)
       }
@@ -396,7 +408,7 @@ export async function getAllTags(): Promise<SelectProperty[]> {
     )
 }
 
-export async function downloadFile(url: URL, slug?: string, imageIndex?: number) {
+export async function downloadFile(url: URL, slug?: string, imageIndex?: number | string) {
   let res!: AxiosResponse
   try {
     console.log(`Downloading file from: ${url.toString()}`)
