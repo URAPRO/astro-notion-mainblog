@@ -115,8 +115,20 @@ await Promise.all(
 );
 
 const currentPostIndex = allPosts.findIndex((post) => post.Slug === slug);
-const prevPost = allPosts[currentPostIndex + 1];
-const nextPost = allPosts[currentPostIndex - 1];
+let prevPost = null;
+let nextPost = null;
+
+if (currentPostIndex !== -1) {
+  // 前の記事（配列内で次のインデックス）が存在する場合のみ設定
+  if (currentPostIndex + 1 < allPosts.length) {
+    prevPost = allPosts[currentPostIndex + 1];
+  }
+  
+  // 次の記事（配列内で前のインデックス）が存在する場合のみ設定
+  if (currentPostIndex - 1 >= 0) {
+    nextPost = allPosts[currentPostIndex - 1];
+  }
+}
 
 let ogImage = '';
 if (post.FeaturedImage && post.FeaturedImage.Url) {
