@@ -344,3 +344,109 @@ export const slugify = (text: string): string => {
     .replace(/-+/g, '-') // 連続するハイフンを一つに
     .replace(/^-+|-+$/g, ''); // 先頭と末尾のハイフンを削除
 };
+
+// ブロックからテキストを抽出する関数
+export const extractTextFromBlocks = (blocks: Block[]): string => {
+  let text = '';
+
+  blocks.forEach((block) => {
+    // 各ブロックタイプからテキストを抽出
+    if (block.Paragraph?.RichTexts) {
+      text += extractTextFromRichTexts(block.Paragraph.RichTexts) + '\n';
+    }
+    if (block.Heading1?.RichTexts) {
+      text += extractTextFromRichTexts(block.Heading1.RichTexts) + '\n';
+    }
+    if (block.Heading2?.RichTexts) {
+      text += extractTextFromRichTexts(block.Heading2.RichTexts) + '\n';
+    }
+    if (block.Heading3?.RichTexts) {
+      text += extractTextFromRichTexts(block.Heading3.RichTexts) + '\n';
+    }
+    if (block.BulletedListItem?.RichTexts) {
+      text += extractTextFromRichTexts(block.BulletedListItem.RichTexts) + '\n';
+    }
+    if (block.NumberedListItem?.RichTexts) {
+      text += extractTextFromRichTexts(block.NumberedListItem.RichTexts) + '\n';
+    }
+    if (block.ToDo?.RichTexts) {
+      text += extractTextFromRichTexts(block.ToDo.RichTexts) + '\n';
+    }
+    if (block.Quote?.RichTexts) {
+      text += extractTextFromRichTexts(block.Quote.RichTexts) + '\n';
+    }
+    if (block.Callout?.RichTexts) {
+      text += extractTextFromRichTexts(block.Callout.RichTexts) + '\n';
+    }
+    if (block.Toggle?.RichTexts) {
+      text += extractTextFromRichTexts(block.Toggle.RichTexts) + '\n';
+    }
+    if (block.Code?.RichTexts) {
+      text += extractTextFromRichTexts(block.Code.RichTexts) + '\n';
+    }
+
+    // 子ブロックがある場合は再帰的に処理
+    const children = block.Paragraph?.Children ||
+      block.Heading1?.Children ||
+      block.Heading2?.Children ||
+      block.Heading3?.Children ||
+      block.BulletedListItem?.Children ||
+      block.NumberedListItem?.Children ||
+      block.ToDo?.Children ||
+      block.Quote?.Children ||
+      block.Callout?.Children ||
+      block.Toggle?.Children;
+
+    if (children && children.length > 0) {
+      text += extractTextFromBlocks(children);
+    }
+
+    // カラムリストの場合
+    if (block.ColumnList?.Columns) {
+      block.ColumnList.Columns.forEach((column) => {
+        if (column.Children) {
+          text += extractTextFromBlocks(column.Children);
+        }
+      });
+    }
+
+    // テーブルの場合
+    if (block.Table?.Rows) {
+      block.Table.Rows.forEach((row) => {
+        if (row.Cells) {
+          row.Cells.forEach((cell) => {
+            if (cell.RichTexts) {
+              text += extractTextFromRichTexts(cell.RichTexts) + ' ';
+            }
+          });
+          text += '\n';
+        }
+      });
+    }
+  });
+
+  return text;
+};
+
+// RichTextsからテキストを抽出する関数
+const extractTextFromRichTexts = (richTexts: RichText[]): string => {
+  return richTexts.map((richText) => richText.PlainText || '').join('');
+};
+
+// 読了時間を計算する関数（日本語対応）
+export const calculateReadingTime = (text: string): number => {
+  // 改行や空白を整理
+  const cleanedText = text.replace(/\s+/g, ' ').trim();
+  
+  // 文字数をカウント
+  const charCount = cleanedText.length;
+  
+  // 日本語の平均読書速度（400-600文字/分）
+  // ここでは中間値の500文字/分を使用
+  const READING_SPEED = 500;
+  
+  // 読了時間を計算（分単位、最小1分）
+  const readingTime = Math.max(1, Math.ceil(charCount / READING_SPEED));
+  
+  return readingTime;
+};

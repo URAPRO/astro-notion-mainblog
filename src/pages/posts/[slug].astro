@@ -17,11 +17,14 @@ import {
   filePath,
   extractTargetBlocks,
   getStaticFilePath,
+  extractTextFromBlocks,
+  calculateReadingTime,
 } from '../../lib/blog-helpers.ts'
 import { SocialShareButtons } from '../../components/ShareButton.tsx';
 import Layout from '../../layouts/Layout.astro'
 import PostDate from '../../components/PostDate.astro'
 import PostUpdateDate from '../../components/PostUpdateDate.astro'
+import PostReadingTime from '../../components/PostReadingTime.astro'
 import PostTags from '../../components/PostTags.astro'
 import PostTitle from '../../components/PostTitle.astro'
 import PostBody from '../../components/PostBody.astro'
@@ -53,6 +56,10 @@ const [blocks, allPosts, rankedPosts, recentPosts, tags] =
     getAllTags(),
     getPostsByTag(post.Tags[0]?.name, 6),
   ])
+
+// 読了時間を計算
+const postText = extractTextFromBlocks(blocks);
+const readingTime = calculateReadingTime(postText);
 
 // 目次用の見出しブロックを抽出 (h1, h2, h3)
 const tocHeadings = blocks.filter(
@@ -205,9 +212,10 @@ const breadcrumbLd = {
   <div slot="main" class={`${styles.main} ${styles.postPage}`}>
     <div class={styles.post}>
       <PostTitle post={post} enableLink={false} />
-      <div style="display: flex; flex-wrap: wrap; column-gap: 1em;">
+      <div style="display: flex; flex-wrap: wrap; column-gap: 1em; align-items: baseline;">
         <PostDate post={post} />
         <PostUpdateDate post={post} />
+        <PostReadingTime readingTime={readingTime} />
       </div>
       <PostTags post={post} enableLink={true} />
       <PostBody blocks={blocks} slug={slug} />
