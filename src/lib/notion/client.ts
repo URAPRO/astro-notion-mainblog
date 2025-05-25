@@ -439,33 +439,99 @@ export async function downloadFile(url: URL, slug?: string, imageIndex?: number 
   // ファイル拡張子を取得
   const fileExtension = originalFilename.split('.').pop() || ''
   
+  // 画像ファイルかどうか判定
+  const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExtension.toLowerCase())
+  
   // slugとimageIndexが提供されている場合、新しいファイル名を生成
   let filepath
+  let webpFilepath
+  let thumbnailFilepath
+  
   if (slug && imageIndex !== undefined) {
-    const newFilename = `${slug}-${imageIndex}.${fileExtension}`
-    filepath = `${dir}/${newFilename}`
-    console.log(`Renaming file to: ${newFilename}`)
+    const baseName = `${slug}-${imageIndex}`
+    filepath = `${dir}/${baseName}.${fileExtension}`
+    if (isImage) {
+      webpFilepath = `${dir}/${baseName}.webp`
+      thumbnailFilepath = `${dir}/${baseName}-thumb.webp`
+    }
+    console.log(`Renaming file to: ${baseName}.${fileExtension}`)
   } else {
     filepath = `${dir}/${originalFilename}`
+    if (isImage) {
+      const nameWithoutExt = originalFilename.slice(0, originalFilename.lastIndexOf('.'))
+      webpFilepath = `${dir}/${nameWithoutExt}.webp`
+      thumbnailFilepath = `${dir}/${nameWithoutExt}-thumb.webp`
+    }
   }
   
   console.log(`Saving file to: ${filepath}`)
 
   const writeStream = createWriteStream(filepath)
-  const rotate = sharp().rotate()
-
   let stream = res.data
 
-  if (res.headers['content-type'] === 'image/jpeg') {
-    stream = stream.pipe(rotate)
-  }
-  try {
-    await pipeline(stream, new ExifTransformer(), writeStream)
-    console.log(`File saved successfully: ${filepath}`)
-  } catch (err) {
-    console.error(`Failed to save file: ${err}`)
-    writeStream.end()
-    return Promise.resolve()
+  // 画像の場合の処理
+  if (isImage && res.headers['content-type']?.startsWith('image/')) {
+    try {
+      // オリジナル画像を保存
+      const chunks: Buffer[] = []
+      stream.on('data', (chunk: Buffer) => chunks.push(chunk))
+      
+      await new Promise<void>((resolve, reject) => {
+        stream.on('end', () => resolve())
+        stream.on('error', reject)
+      })
+      
+      const buffer = Buffer.concat(chunks)
+      
+      // sharpでEXIF削除と回転処理
+      const processedBuffer = await sharp(buffer)
+        .rotate()
+        .toBuffer()
+      
+      // オリジナル画像を保存
+      await fs.promises.writeFile(filepath, processedBuffer)
+      console.log(`Original image saved: ${filepath}`)
+      
+      // WebP変換（元がWebPでない場合）
+      if (fileExtension.toLowerCase() !== 'webp' && webpFilepath) {
+        await sharp(processedBuffer)
+          .webp({ quality: 85 })
+          .toFile(webpFilepath)
+        console.log(`WebP image saved: ${webpFilepath}`)
+      }
+      
+      // サムネイル生成（幅400pxに縮小）
+      if (thumbnailFilepath) {
+        await sharp(processedBuffer)
+          .resize(400, null, { 
+            withoutEnlargement: true,
+            fit: 'inside'
+          })
+          .webp({ quality: 80 })
+          .toFile(thumbnailFilepath)
+        console.log(`Thumbnail saved: ${thumbnailFilepath}`)
+      }
+      
+      console.log(`File saved successfully: ${filepath}`)
+    } catch (err) {
+      console.error(`Failed to process image: ${err}`)
+      // エラーが発生した場合は、通常のファイル保存にフォールバック
+      const fallbackStream = res.data
+      await pipeline(fallbackStream, new ExifTransformer(), writeStream)
+    }
+  } else {
+    // 画像以外のファイルの場合は通常の処理
+    if (res.headers['content-type'] === 'image/jpeg') {
+      stream = stream.pipe(sharp().rotate())
+    }
+    try {
+      await pipeline(stream, new ExifTransformer(), writeStream)
+      console.log(`File saved successfully: ${filepath}`)
+    } catch (err) {
+      console.error(`Failed to save file: ${err}`)
+      writeStream.end()
+      return Promise.resolve()
+    }
   }
 }
 
@@ -1065,7 +1131,8 @@ async function _buildPost(pageObject: responses.PageObject): Promise<Post> {
     ExternalLink: prop.ExternalLink?.url || undefined,
     SocialShareHashtags: prop.SocialShareHashtags?.rich_text?.[0]?.plain_text || undefined,
     RelatedPostPageIds: prop.RelatedPosts?.relation?.map((rel: { id: string }) => rel.id) || [],
-    InternalTags: prop.InternalTags?.multi_select || []
+    InternalTags: prop.InternalTags?.multi_select || [],
+    Published: prop.Published?.checkbox || false
   };
 }
 
