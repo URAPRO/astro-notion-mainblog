@@ -23,6 +23,7 @@ export interface Post {
   LastEditedDate: string
   RelatedPostPageIds?: string[]
   InternalTags?: SelectProperty[]
+  Published: boolean
 }
 
 export interface Block {

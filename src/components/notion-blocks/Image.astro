@@ -13,10 +13,27 @@ export interface Props {
 const { block } = Astro.props
 
 let imageSrc = ''
+let webpSrc = ''
+let thumbnailSrc = ''
+
 if (block.Image?.External?.Url) {
   imageSrc = block.Image.External.Url
 } else if (block.Image?.File?.Url) {
-  imageSrc = filePath(new URL(block.Image.File.Url))
+  const originalPath = filePath(new URL(block.Image.File.Url))
+  imageSrc = originalPath
+  
+  // WebPとサムネイルのパスを生成
+  const pathParts = originalPath.split('.')
+  const ext = pathParts.pop()
+  const basePath = pathParts.join('.')
+  
+  // WebPファイルが存在する可能性があるパス
+  if (ext && ext.toLowerCase() !== 'webp') {
+    webpSrc = `${basePath}.webp`
+  }
+  
+  // サムネイルのパス
+  thumbnailSrc = `${basePath}-thumb.webp`
 }
 
 // キャプションからの情報抽出
@@ -94,10 +111,36 @@ if (specifiedWidthString && originalWidth && originalHeight) {
         <div>
           {ENABLE_LIGHTBOX ? (
             <a data-fslightbox href={imageSrc} data-type="image">
-              <img src={imageSrc} alt={altText} width={finalWidth} height={finalHeight} loading="lazy" />
+              <picture>
+                {webpSrc && <source srcset={webpSrc} type="image/webp" />}
+                <img 
+                  src={imageSrc} 
+                  alt={altText} 
+                  width={finalWidth} 
+                  height={finalHeight} 
+                  loading="lazy" 
+                  decoding="async"
+                  data-src={imageSrc}
+                  data-thumbnail={thumbnailSrc}
+                  class="lazy-content-image"
+                />
+              </picture>
             </a>
           ) : (
-            <img src={imageSrc} alt={altText} width={finalWidth} height={finalHeight} loading="lazy" />
+            <picture>
+              {webpSrc && <source srcset={webpSrc} type="image/webp" />}
+              <img 
+                src={imageSrc} 
+                alt={altText} 
+                width={finalWidth} 
+                height={finalHeight} 
+                loading="lazy" 
+                decoding="async"
+                data-src={imageSrc}
+                data-thumbnail={thumbnailSrc}
+                class="lazy-content-image"
+              />
+            </picture>
           )}
         </div>
         {block.Image?.Caption && block.Image.Caption.length > 0 && <Caption richTexts={block.Image.Caption} />}
@@ -119,5 +162,64 @@ if (specifiedWidthString && originalWidth && originalHeight) {
   .image > div > div img {
     display: block;
     max-width: 100%;
+    transition: opacity 0.3s ease-in-out, filter 0.3s ease-in-out;
+  }
+  
+  .image img.lazy-loading {
+    filter: blur(10px);
+    opacity: 0.8;
+  }
+  
+  .image img.lazy-loaded {
+    filter: blur(0);
+    opacity: 1;
   }
 </style>
+
+<script>
+  // コンテンツ画像用のレイジーローディング実装
+  if ('IntersectionObserver' in window) {
+    const contentImages = document.querySelectorAll('img.lazy-content-image');
+    
+    const contentImageObserver = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const img = entry.target as HTMLImageElement;
+          const thumbnail = img.getAttribute('data-thumbnail');
+          const fullSrc = img.getAttribute('data-src');
+          
+          if (thumbnail && fullSrc) {
+            img.classList.add('lazy-loading');
+            
+            // サムネイルを読み込む
+            const thumbnailImg = new Image();
+            thumbnailImg.onload = () => {
+              // サムネイルのセット（既にsrcが設定されている場合はスキップ）
+              if (!img.src.includes('-thumb')) {
+                img.src = thumbnail;
+              }
+              
+              // フルサイズ画像を読み込む
+              const fullImg = new Image();
+              fullImg.onload = () => {
+                img.src = fullSrc;
+                img.classList.remove('lazy-loading');
+                img.classList.add('lazy-loaded');
+              };
+              fullImg.src = fullSrc;
+            };
+            thumbnailImg.src = thumbnail;
+          } else {
+            img.classList.add('lazy-loaded');
+          }
+          
+          observer.unobserve(img);
+        }
+      });
+    }, {
+      rootMargin: '100px'
+    });
+    
+    contentImages.forEach(img => contentImageObserver.observe(img));
+  }
+</script>
