@@ -16,7 +16,10 @@
 .main {
   display: grid;
   gap: 0.8rem;
-  padding: 0 1rem;
+  padding-left: 24px;
+  padding-right: 24px;
+  padding-top: 0;
+  padding-bottom: 0;
   max-width: 1024px;
   margin: 0 auto;
 }
@@ -24,6 +27,26 @@
 @media (min-width: 1024px) {
   .postsPage {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* 410px以下の極小画面では更にパディングを小さく */
+@media (max-width: 410px) {
+  .main {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+@media (max-width: 320px) {
+  .main {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  
+  .postPage .main {
+    padding-left: 12px;
+    padding-right: 12px;
   }
 }
 
@@ -133,7 +156,14 @@
   }
 
   .postPage .main {
-    padding: 0 1rem;
+    padding: 0 24px;
+  }
+}
+
+@media (max-width: 410px) {
+  .postPage .main {
+    padding-left: 16px;
+    padding-right: 16px;
   }
 }
 

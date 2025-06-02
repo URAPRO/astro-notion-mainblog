@@ -237,7 +237,22 @@ if (profilePost?.FeaturedImage?.Url) {
   }
   @media (max-width: 640px) {
     div.content {
-      padding: 0 18px;
+      padding-top: 0;
+      padding-bottom: 0;
+      padding-left: 24px;
+      padding-right: 24px;
+    }
+  }
+  @media (max-width: 410px) {
+    div.content {
+      padding-left: 16px;
+      padding-right: 16px;
+    }
+  }
+  @media (max-width: 320px) {
+    div.content {
+      padding-left: 12px;
+      padding-right: 12px;
     }
   }
 
