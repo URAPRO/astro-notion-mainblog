@@ -22,7 +22,17 @@
   padding-bottom: 0;
   max-width: 1024px;
   margin: 0 auto;
+  box-sizing: border-box;
 }
+
+.main > * {
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  min-width: 0;
+}
+
 /* ページ一覧が1024px以上のときは2列のレイアウトにする */
 @media (min-width: 1024px) {
   .postsPage {
@@ -70,6 +80,24 @@
 .post {
   margin: 0;
   border-top: none;
+}
+
+.post > *,
+.post p,
+.post h1,
+.post h2,
+.post h3,
+.post h4,
+.post h5,
+.post h6,
+.post div,
+.post section,
+.post article {
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
 }
 
 .post footer {
@@ -157,6 +185,13 @@
 
   .postPage .main {
     padding: 0 24px;
+  }
+  
+  .main .post > * {
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
   }
 }
 
