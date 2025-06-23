@@ -30,6 +30,9 @@ function isFileObject(icon: FileObject | Emoji | null): icon is FileObject {
           <img src={post.Icon.Url} alt="Post title icon" class={styles.icon} />
         ) : null}
         <span class={styles.titleText}>{post.Title}</span>
+        {post.ExternalLink && post.ExternalLink.includes('note.com') && (
+          <span class="externalBadge">note</span>
+        )}
       </span>
     </a>
   ) : (
@@ -40,6 +43,9 @@ function isFileObject(icon: FileObject | Emoji | null): icon is FileObject {
         <img src={post.Icon.Url} alt="Post title icon" class={styles.icon} />
       ) : null}
       <span class={styles.titleText}>{post.Title}</span>
+      {post.ExternalLink && post.ExternalLink.includes('note.com') && (
+        <span class="externalBadge">note</span>
+      )}
     </span>
   )}
 </h2>
@@ -57,5 +63,19 @@ function isFileObject(icon: FileObject | Emoji | null): icon is FileObject {
   a:hover {
     text-decoration: underline;
   }
-
+  .titleContent {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+  }
+  .externalBadge {
+    display: inline-block;
+    margin-left: 0.4em;
+    padding: 0.1em 0.4em;
+    font-size: 0.7rem;
+    background-color: #41c9b4; /* note のブランドカラーに近い色 */
+    color: #ffffff;
+    border-radius: 4px;
+    line-height: 1;
+  }
 </style>
