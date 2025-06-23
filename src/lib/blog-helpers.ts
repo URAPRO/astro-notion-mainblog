@@ -344,3 +344,229 @@ export const slugify = (text: string): string => {
     .replace(/-+/g, '-') // 連続するハイフンを一つに
     .replace(/^-+|-+$/g, ''); // 先頭と末尾のハイフンを削除
 };
+
+// ブロックからテキストを抽出する関数
+export const extractTextFromBlocks = (blocks: Block[]): string => {
+  let text = '';
+
+  blocks.forEach((block) => {
+    // 各ブロックタイプからテキストを抽出
+    if (block.Paragraph?.RichTexts) {
+      text += extractTextFromRichTexts(block.Paragraph.RichTexts) + '\n';
+    }
+    if (block.Heading1?.RichTexts) {
+      text += extractTextFromRichTexts(block.Heading1.RichTexts) + '\n';
+    }
+    if (block.Heading2?.RichTexts) {
+      text += extractTextFromRichTexts(block.Heading2.RichTexts) + '\n';
+    }
+    if (block.Heading3?.RichTexts) {
+      text += extractTextFromRichTexts(block.Heading3.RichTexts) + '\n';
+    }
+    if (block.BulletedListItem?.RichTexts) {
+      text += extractTextFromRichTexts(block.BulletedListItem.RichTexts) + '\n';
+    }
+    if (block.NumberedListItem?.RichTexts) {
+      text += extractTextFromRichTexts(block.NumberedListItem.RichTexts) + '\n';
+    }
+    if (block.ToDo?.RichTexts) {
+      text += extractTextFromRichTexts(block.ToDo.RichTexts) + '\n';
+    }
+    if (block.Quote?.RichTexts) {
+      text += extractTextFromRichTexts(block.Quote.RichTexts) + '\n';
+    }
+    if (block.Callout?.RichTexts) {
+      text += extractTextFromRichTexts(block.Callout.RichTexts) + '\n';
+    }
+    if (block.Toggle?.RichTexts) {
+      text += extractTextFromRichTexts(block.Toggle.RichTexts) + '\n';
+    }
+    if (block.Code?.RichTexts) {
+      text += extractTextFromRichTexts(block.Code.RichTexts) + '\n';
+    }
+
+    // 子ブロックがある場合は再帰的に処理
+    const children = block.Paragraph?.Children ||
+      block.Heading1?.Children ||
+      block.Heading2?.Children ||
+      block.Heading3?.Children ||
+      block.BulletedListItem?.Children ||
+      block.NumberedListItem?.Children ||
+      block.ToDo?.Children ||
+      block.Quote?.Children ||
+      block.Callout?.Children ||
+      block.Toggle?.Children;
+
+    if (children && children.length > 0) {
+      text += extractTextFromBlocks(children);
+    }
+
+    // カラムリストの場合
+    if (block.ColumnList?.Columns) {
+      block.ColumnList.Columns.forEach((column) => {
+        if (column.Children) {
+          text += extractTextFromBlocks(column.Children);
+        }
+      });
+    }
+
+    // テーブルの場合
+    if (block.Table?.Rows) {
+      block.Table.Rows.forEach((row) => {
+        if (row.Cells) {
+          row.Cells.forEach((cell) => {
+            if (cell.RichTexts) {
+              text += extractTextFromRichTexts(cell.RichTexts) + ' ';
+            }
+          });
+          text += '\n';
+        }
+      });
+    }
+  });
+
+  return text;
+};
+
+// RichTextsからテキストを抽出する関数
+const extractTextFromRichTexts = (richTexts: RichText[]): string => {
+  return richTexts.map((richText) => richText.PlainText || '').join('');
+};
+
+// 読了時間を計算する関数（日本語対応）
+export const calculateReadingTime = (text: string): number => {
+  // 改行や空白を整理
+  const cleanedText = text.replace(/\s+/g, ' ').trim();
+  
+  // 文字数をカウント
+  const charCount = cleanedText.length;
+  
+  // 日本語の平均読書速度（400-600文字/分）
+  // ここでは中間値の500文字/分を使用
+  const READING_SPEED = 500;
+  
+  // 読了時間を計算（分単位、最小1分）
+  const readingTime = Math.max(1, Math.ceil(charCount / READING_SPEED));
+  
+  return readingTime;
+};
+
+// テキストを単語に分割する関数（日本語対応）
+export const tokenizeText = (text: string): string[] => {
+  // 簡易的な実装：日本語の文字を1文字ずつ、英単語はスペースで分割
+  const words: string[] = [];
+  
+  // 英単語を抽出
+  const englishWords = text.match(/[a-zA-Z]+/g) || [];
+  words.push(...englishWords.map(w => w.toLowerCase()));
+  
+  // 日本語の文字を2-gram（2文字の組み合わせ）で抽出
+  const japaneseText = text.replace(/[a-zA-Z0-9\s\-_.,!?]/g, '');
+  for (let i = 0; i < japaneseText.length - 1; i++) {
+    words.push(japaneseText.substring(i, i + 2));
+  }
+  
+  return words;
+};
+
+// TF (Term Frequency) を計算する関数
+export const calculateTF = (words: string[]): Map<string, number> => {
+  const tf = new Map<string, number>();
+  const totalWords = words.length;
+  
+  words.forEach(word => {
+    tf.set(word, (tf.get(word) || 0) + 1);
+  });
+  
+  // 正規化（単語の出現回数 / 総単語数）
+  tf.forEach((count, word) => {
+    tf.set(word, count / totalWords);
+  });
+  
+  return tf;
+};
+
+// IDF (Inverse Document Frequency) を計算する関数
+export const calculateIDF = (documents: string[][]): Map<string, number> => {
+  const idf = new Map<string, number>();
+  const totalDocs = documents.length;
+  const wordDocCount = new Map<string, number>();
+  
+  // 各単語が何文書に出現するかをカウント
+  documents.forEach(doc => {
+    const uniqueWords = new Set(doc);
+    uniqueWords.forEach(word => {
+      wordDocCount.set(word, (wordDocCount.get(word) || 0) + 1);
+    });
+  });
+  
+  // IDF = log(総文書数 / その単語を含む文書数)
+  wordDocCount.forEach((count, word) => {
+    idf.set(word, Math.log(totalDocs / count));
+  });
+  
+  return idf;
+};
+
+// TF-IDFベクトルを計算する関数
+export const calculateTFIDF = (tf: Map<string, number>, idf: Map<string, number>): Map<string, number> => {
+  const tfidf = new Map<string, number>();
+  
+  tf.forEach((tfValue, word) => {
+    const idfValue = idf.get(word) || 0;
+    tfidf.set(word, tfValue * idfValue);
+  });
+  
+  return tfidf;
+};
+
+// 余弦類似度を計算する関数
+export const calculateCosineSimilarity = (vec1: Map<string, number>, vec2: Map<string, number>): number => {
+  let dotProduct = 0;
+  let norm1 = 0;
+  let norm2 = 0;
+  
+  // すべての単語を取得
+  const allWords = new Set([...vec1.keys(), ...vec2.keys()]);
+  
+  allWords.forEach(word => {
+    const val1 = vec1.get(word) || 0;
+    const val2 = vec2.get(word) || 0;
+    
+    dotProduct += val1 * val2;
+    norm1 += val1 * val1;
+    norm2 += val2 * val2;
+  });
+  
+  const denominator = Math.sqrt(norm1) * Math.sqrt(norm2);
+  
+  return denominator === 0 ? 0 : dotProduct / denominator;
+};
+
+// 記事の内容類似度を計算する関数
+export const calculateContentSimilarity = (
+  post1Title: string,
+  post1Content: string,
+  post2Title: string,
+  post2Content: string,
+  idf: Map<string, number>
+): number => {
+  // タイトルと本文を結合（タイトルは重要なので2回繰り返す）
+  const text1 = `${post1Title} ${post1Title} ${post1Content}`;
+  const text2 = `${post2Title} ${post2Title} ${post2Content}`;
+  
+  // トークン化
+  const words1 = tokenizeText(text1);
+  const words2 = tokenizeText(text2);
+  
+  // TF計算
+  const tf1 = calculateTF(words1);
+  const tf2 = calculateTF(words2);
+  
+  // TF-IDF計算
+  const tfidf1 = calculateTFIDF(tf1, idf);
+  const tfidf2 = calculateTFIDF(tf2, idf);
+  
+  // 余弦類似度計算
+  return calculateCosineSimilarity(tfidf1, tfidf2);
+};

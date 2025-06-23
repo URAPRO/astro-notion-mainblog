@@ -1,6 +1,6 @@
 ---
 import type { Post, SelectProperty } from '../lib/interfaces.ts';
-import { getPostLink, filePath } from '../lib/blog-helpers.ts';
+import { getPostLink, filePath, tokenizeText, calculateIDF } from '../lib/blog-helpers.ts';
 
 export interface Props {
   currentPost: Post;
@@ -12,6 +12,8 @@ const { currentPost, allPosts, maxPosts = 4 } = Astro.props;
 
 interface ScoredPost extends Post {
   score: number;
+  tagScore: number;
+  contentScore: number;
 }
 
 // Helper function to calculate common tags between two sets of tags
@@ -22,80 +24,119 @@ function calculateCommonTags(tags1: SelectProperty[] | undefined, tags2: SelectP
   return tags1.filter(t1 => tags2.some(t2 => t2.name === t1.name)).length;
 }
 
+// コンテンツ類似度計算のための簡易実装
+function calculateSimpleContentSimilarity(post1: Post, post2: Post): number {
+  // タイトルとExcerpt（抜粋）を使って類似度を計算
+  const text1 = `${post1.Title} ${post1.Title} ${post1.Excerpt || ''}`.toLowerCase();
+  const text2 = `${post2.Title} ${post2.Title} ${post2.Excerpt || ''}`.toLowerCase();
+  
+  // 単語をトークン化
+  const words1 = tokenizeText(text1);
+  const words2 = tokenizeText(text2);
+  
+  // 共通単語数を計算
+  const set1 = new Set(words1);
+  const set2 = new Set(words2);
+  const commonWords = [...set1].filter(word => set2.has(word)).length;
+  
+  // Jaccard係数（共通単語数 / 全単語数）
+  const totalUniqueWords = new Set([...set1, ...set2]).size;
+  
+  return totalUniqueWords > 0 ? commonWords / totalUniqueWords : 0;
+}
+
 let relatedPostsToDisplay: Post[] = [];
 
 // --- 1. 手動で設定された関連記事を取得 ---
-// currentPost.RelatedPostPageIds に基づいて、手動で指定された関連記事をrelatedPostsToDisplayの初期リストとして設定します。
-// この際、カレント記事自身は除外します。
 if (currentPost.RelatedPostPageIds && currentPost.RelatedPostPageIds.length > 0) {
   relatedPostsToDisplay = currentPost.RelatedPostPageIds
     .map(pageId => allPosts.find(p => p.PageId === pageId))
     .filter(p => p !== undefined && p.PageId !== currentPost.PageId) as Post[];
 }
 
-// --- 2. InternalTags に基づく関連記事のスコアリング ---
-// allPosts から、InternalTags がカレント記事と共通する記事を候補として収集し、スコアリングします。
-// スコアは共通するInternalTagsの数に重み（例: 10）を乗算します。
-// カレント記事自身と、既に手動で追加された記事は除外します。
-let scoredByInternalTags: ScoredPost[] = [];
-if (currentPost.InternalTags && currentPost.InternalTags.length > 0) {
-  allPosts.forEach(post => {
-    if (post.PageId === currentPost.PageId || relatedPostsToDisplay.some(rp => rp.PageId === post.PageId)) {
-      return; // 自分自身と既に手動で選ばれた記事は除く
-    }
+// --- 2. スコアリングベースの関連記事選択 ---
+let candidatePosts: ScoredPost[] = [];
 
-    const commonInternalTagsCount = calculateCommonTags(currentPost.InternalTags, post.InternalTags);
-    if (commonInternalTagsCount > 0) {
-      scoredByInternalTags.push({ ...post, score: commonInternalTagsCount * 10 });
-    }
-  });
-}
+// 手動設定されていない記事をスコアリング
+const manualPostIds = new Set(relatedPostsToDisplay.map(p => p.PageId));
 
-// --- 3. Tags に基づく関連記事のスコアリング ---
-// allPosts から、Tags（表示用タグ）がカレント記事と共通する記事を候補として収集し、スコアリングします。
-// スコアは共通するTagsの数です（重みは1）。
-// カレント記事自身、手動で追加された記事、InternalTagsで既にスコアリングされた記事は除外します。
-let scoredByDisplayTags: ScoredPost[] = [];
-if (currentPost.Tags && currentPost.Tags.length > 0) {
-  allPosts.forEach(post => {
-    if (
-      post.PageId === currentPost.PageId ||
-      relatedPostsToDisplay.some(rp => rp.PageId === post.PageId) ||
-      scoredByInternalTags.some(sit => sit.PageId === post.PageId)
-    ) {
-      return; // 自分自身、手動設定済み、InternalTagsでスコアリング済みの記事は除く
-    }
+allPosts.forEach(post => {
+  // 自分自身と手動設定済みの記事は除外
+  if (post.PageId === currentPost.PageId || manualPostIds.has(post.PageId)) {
+    return;
+  }
+  
+  let tagScore = 0;
+  let contentScore = 0;
+  
+  // InternalTagsスコア（重み: 10）
+  if (currentPost.InternalTags && post.InternalTags) {
+    const commonInternalTags = calculateCommonTags(currentPost.InternalTags, post.InternalTags);
+    tagScore += commonInternalTags * 10;
+  }
+  
+  // 表示Tagsスコア（重み: 3）
+  if (currentPost.Tags && post.Tags) {
+    const commonDisplayTags = calculateCommonTags(currentPost.Tags, post.Tags);
+    tagScore += commonDisplayTags * 3;
+  }
+  
+  // コンテンツ類似度スコア（重み: 50）
+  contentScore = calculateSimpleContentSimilarity(currentPost, post) * 50;
+  
+  // 総合スコア = タグスコア + コンテンツ類似度スコア
+  const totalScore = tagScore + contentScore;
+  
+  // スコアが0より大きい記事のみ候補に追加
+  if (totalScore > 0) {
+    candidatePosts.push({
+      ...post,
+      score: totalScore,
+      tagScore,
+      contentScore
+    });
+  }
+});
 
-    const commonDisplayTagsCount = calculateCommonTags(currentPost.Tags, post.Tags);
-    if (commonDisplayTagsCount > 0) {
-      scoredByDisplayTags.push({ ...post, score: commonDisplayTagsCount });
-    }
-  });
-}
+// --- 3. スコアの高い順にソート ---
+candidatePosts.sort((a, b) => {
+  // 総合スコアでソート
+  if (b.score !== a.score) {
+    return b.score - a.score;
+  }
+  // 同点の場合はタグスコアを優先
+  if (b.tagScore !== a.tagScore) {
+    return b.tagScore - a.tagScore;
+  }
+  // それでも同点の場合は新しい記事を優先
+  return new Date(b.Date).getTime() - new Date(a.Date).getTime();
+});
 
-// --- 4. スコアリングされた記事候補をマージしてソート ---
-// InternalTagsとTagsでスコアリングされた記事を一つのリストにまとめ、スコアの高い順にソートします。
-let candidatePosts: ScoredPost[] = [...scoredByInternalTags, ...scoredByDisplayTags];
-candidatePosts.sort((a, b) => b.score - a.score);
-
-// --- 5. 最終的な関連記事リストを作成 ---
-// 手動で設定された関連記事を優先し、残りの枠をスコア順に候補記事で埋めていきます。
-// 最終的なリストの投稿数が maxPosts を超えないようにし、重複も排除します。
-const finalPostIds = new Set(relatedPostsToDisplay.map(p => p.PageId));
-
+// --- 4. 最終的な関連記事リストを作成 ---
+// 手動設定を優先し、残りの枠をスコア順で埋める
 for (const scoredPost of candidatePosts) {
   if (relatedPostsToDisplay.length >= maxPosts) {
     break;
   }
-  if (!finalPostIds.has(scoredPost.PageId)) {
-    relatedPostsToDisplay.push(scoredPost);
-    finalPostIds.add(scoredPost.PageId);
-  }
+  relatedPostsToDisplay.push(scoredPost);
 }
 
-// 念のため、最終リストの件数がmaxPostsを超えていないか確認し、超えていれば調整
+// 最大投稿数を超えていないか確認
 if (relatedPostsToDisplay.length > maxPosts) {
   relatedPostsToDisplay = relatedPostsToDisplay.slice(0, maxPosts);
+}
+
+// デバッグ情報（開発時のみ）
+if (import.meta.env.DEV && relatedPostsToDisplay.length > 0) {
+  console.log('Related posts for:', currentPost.Title);
+  relatedPostsToDisplay.forEach((post, index) => {
+    const scored = candidatePosts.find(p => p.PageId === post.PageId);
+    if (scored) {
+      console.log(`${index + 1}. ${post.Title} - Total: ${scored.score.toFixed(2)}, Tags: ${scored.tagScore}, Content: ${scored.contentScore.toFixed(2)}`);
+    } else {
+      console.log(`${index + 1}. ${post.Title} - (Manual)`);
+    }
+  });
 }
 
 ---

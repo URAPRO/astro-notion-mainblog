@@ -184,15 +184,18 @@ if (profilePost?.FeaturedImage?.Url) {
     margin: 0 auto;
     max-width: 1280px;
     min-height: 100vh;
+    width: 100%;
   }
 
   .container > div {
     display: flex;
     max-width: 1280px;
+    width: 100%;
   }
   @media (max-width: 640px) {
     .container > div {
       display: block;
+      width: 100%;
     }
   }
 
@@ -200,10 +203,14 @@ if (profilePost?.FeaturedImage?.Url) {
     flex: 1;
     order: 2;
     justify-content: space-between;
+    min-width: 0;
+    max-width: 100%;
   }
   @media (max-width: 640px) {
     main {
       order: 1;
+      width: 100%;
+      max-width: 100%;
     }
   }
 
@@ -214,6 +221,7 @@ if (profilePost?.FeaturedImage?.Url) {
     background-color: #eee3c9;
     position: relative;
     height: auto;
+    flex-shrink: 0;
   }
   @media (max-width: 640px) {
     aside {
@@ -234,10 +242,52 @@ if (profilePost?.FeaturedImage?.Url) {
 
   div.content {
     padding: 20px 40px;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
   }
+  
+  div.content > * {
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    flex-shrink: 1;
+    min-width: 0;
+  }
+  
   @media (max-width: 640px) {
     div.content {
-      padding: 0 18px;
+      padding-top: 0;
+      padding-bottom: 0;
+      padding-left: 24px;
+      padding-right: 24px;
+      width: 100%;
+      max-width: 100%;
+    }
+    
+    div.content > * {
+      width: auto;
+      max-width: none;
+      margin-left: 0;
+      margin-right: 0;
+    }
+  }
+  @media (max-width: 410px) {
+    div.content {
+      padding-left: 16px;
+      padding-right: 16px;
+    }
+  }
+  @media (max-width: 320px) {
+    div.content {
+      padding-left: 12px;
+      padding-right: 12px;
     }
   }
 
@@ -349,6 +399,8 @@ if (profilePost?.FeaturedImage?.Url) {
   * {
     box-sizing: border-box;
     word-break: break-word;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
   }
 
   html,
@@ -434,12 +486,16 @@ if (profilePost?.FeaturedImage?.Url) {
   }
   pre {
     margin: 0;
-    white-space: pre;
+    white-space: pre-wrap;
     tab-size: 2;
+    overflow-x: auto;
+    max-width: 100%;
   }
   pre :global(code) {
     overflow: auto;
     -webkit-overflow-scrolling: touch;
+    white-space: pre-wrap;
+    max-width: 100%;
   }
 
   hr {
