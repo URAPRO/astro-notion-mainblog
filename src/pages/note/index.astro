@@ -1,0 +1,69 @@
+---
+import {
+  getAllBlogPosts,
+  getPosts,
+  getRankedPosts,
+  getAllTags,
+} from '../../lib/notion/client.ts'
+import Layout from '../../layouts/Layout.astro'
+import NoContents from '../../components/NoContents.astro'
+import PostDate from '../../components/PostDate.astro'
+import PostUpdateDate from '../../components/PostUpdateDate.astro'
+import PostTags from '../../components/PostTags.astro'
+import PostTitle from '../../components/PostTitle.astro'
+import PostFeaturedImage from '../../components/PostFeaturedImage.astro'
+import BlogPostsLink from '../../components/BlogPostsLink.astro'
+import BlogTagsLink from '../../components/BlogTagsLink.astro'
+import styles from '../../styles/blog.module.css'
+import { getPostLink } from '../../lib/blog-helpers';
+
+const [allPosts, recentPosts, rankedPosts, tags] = await Promise.all([
+  getAllBlogPosts(),
+  getPosts(5),
+  getRankedPosts(),
+  getAllTags(),
+])
+
+// note の記事のみ
+const posts = allPosts.filter((post) => post.ExternalLink && post.ExternalLink.includes('note.com'))
+---
+
+<Layout 
+  title="note の記事" 
+  path="/note"
+  description="note に寄稿した記事一覧"
+  ogImage=""
+>
+  <div slot="main" class={`${styles.main} ${styles.postsPage}`}>
+    {
+      posts.length === 0 ? (
+        <NoContents contents={posts} />
+      ) : (
+        posts.map((post) => (
+          <div class={styles.post} data-post-slug={post.Slug}>
+            <div class={styles.postDetail}>
+              <div class={styles.postDetailLeft}>
+                <PostFeaturedImage post={post} enableLink={false} />
+              </div>
+              <div class={styles.postDetailRight}>
+                <PostTitle post={post} enableLink={true} />
+                <div class={styles.postDate}>
+                  <PostDate post={post} />
+                  <PostUpdateDate post={post} />
+                </div>
+                <PostTags post={post} enableLink={true} />
+              </div>
+              <a class={styles.postLink} href={getPostLink(post)} target="_blank"></a>
+            </div>
+          </div>
+        ))
+      )
+    }
+  </div>
+
+  <div slot="aside" class={styles.aside}>
+    <BlogPostsLink heading="最新記事" posts={recentPosts} />
+    <BlogPostsLink heading="おすすめ記事" posts={rankedPosts} />
+    <BlogTagsLink heading="カテゴリー" tags={tags} />
+  </div>
+</Layout> 

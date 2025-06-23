@@ -173,3 +173,38 @@
   height: 3.0rem;
   vertical-align: -0.5rem;
 }
+
+.seeMoreWrapper {
+  margin: 1rem 0 2rem;
+  text-align: center;
+}
+
+.seeMoreButton {
+  display: inline-block;
+  padding: 0.6rem 1.4rem;
+  background: #f1f3f5;
+  border-radius: 9999px;
+  color: inherit;
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: background 0.2s ease-in-out;
+}
+
+.seeMoreButton:hover {
+  background: #e7e9eb;
+}
+
+.postsPage section {
+  /* フラット化して grid の子要素として扱う */
+  display: contents;
+}
+
+.postsPage h2 {
+  grid-column: 1 / -1;
+  margin: 0.6rem 0 0.4rem;
+  font-size: 1.2rem;
+}
+
+.postsPage .seeMoreWrapper {
+  grid-column: 1 / -1;
+}

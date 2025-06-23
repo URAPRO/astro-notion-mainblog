@@ -1,0 +1,79 @@
+---
+import { NUMBER_OF_POSTS_PER_PAGE } from '../../server-constants.ts'
+import {
+  getAllBlogPosts,
+  getPosts,
+  getRankedPosts,
+  getAllTags,
+} from '../../lib/notion/client.ts'
+import Layout from '../../layouts/Layout.astro'
+import NoContents from '../../components/NoContents.astro'
+import PostDate from '../../components/PostDate.astro'
+import PostUpdateDate from '../../components/PostUpdateDate.astro'
+import PostTags from '../../components/PostTags.astro'
+import PostTitle from '../../components/PostTitle.astro'
+import PostFeaturedImage from '../../components/PostFeaturedImage.astro'
+import Pagination from '../../components/Pagination.astro'
+import BlogPostsLink from '../../components/BlogPostsLink.astro'
+import BlogTagsLink from '../../components/BlogTagsLink.astro'
+import styles from '../../styles/blog.module.css'
+import { getPostLink } from '../../lib/blog-helpers';
+
+const [allPosts, recentPosts, rankedPosts, tags] = await Promise.all([
+  getAllBlogPosts(),
+  getPosts(5),
+  getRankedPosts(),
+  getAllTags(),
+])
+
+// 内部記事のみ抽出
+const internalAllPosts = allPosts.filter((post) => !post.ExternalLink)
+
+const numberOfPages = Math.floor(internalAllPosts.length / NUMBER_OF_POSTS_PER_PAGE) + (internalAllPosts.length % NUMBER_OF_POSTS_PER_PAGE > 0 ? 1 : 0)
+
+const posts = internalAllPosts.slice(0, NUMBER_OF_POSTS_PER_PAGE)
+---
+
+<Layout 
+  title="Posts" 
+  path="/posts"
+  description=""
+  ogImage=""
+>
+  <div slot="main" class={`${styles.main} ${styles.postsPage}`}>
+    {
+      posts.length === 0 ? (
+        <NoContents contents={posts} />
+      ) : (
+        posts.map((post) => (
+          <div class={styles.post} data-post-slug={post.Slug}>
+            <div class={styles.postDetail}>
+              <div class={styles.postDetailLeft}>
+                <PostFeaturedImage post={post} enableLink={false} />
+              </div>
+              <div class={styles.postDetailRight}>
+                <PostTitle post={post} enableLink={true} />
+                <div class={styles.postDate}>
+                  <PostDate post={post} />
+                  <PostUpdateDate post={post} />
+                </div>
+                <PostTags post={post} enableLink={true} />
+              </div>
+              <a class={styles.postLink} href={getPostLink(post)}></a>
+            </div>
+          </div>
+        ))
+      )
+    }
+
+    <footer>
+      <Pagination currentPage={1} numberOfPages={numberOfPages} tag="" />
+    </footer>
+  </div>
+
+  <div slot="aside" class={styles.aside}>
+    <BlogPostsLink heading="最新記事" posts={recentPosts} />
+    <BlogPostsLink heading="おすすめ記事" posts={rankedPosts} />
+    <BlogTagsLink heading="カテゴリー" tags={tags} />
+  </div>
+</Layout>
