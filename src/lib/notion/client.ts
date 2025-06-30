@@ -84,15 +84,22 @@ export async function getAllPosts(): Promise<Post[]> {
           property: 'Date',
           date: {
             on_or_before: (() => {
-              // JST基準で今日の終わり（23:59:59 JST）を取得
-              const jstOffset = 9 * 60 * 60 * 1000; // JST is UTC+9
-              const nowInJst = new Date(Date.now() + jstOffset);
+              // JST is UTC+9. To be robust against server timezone, we use UTC-based methods.
+              const jstOffset = 9 * 60 * 60 * 1000;
+              const jstNow = new Date(Date.now() + jstOffset);
 
-              // Set the time to the end of the day in JST using UTC methods for timezone safety.
-              nowInJst.setUTCHours(23, 59, 59, 999);
-              
-              // Convert back to the correct UTC time by subtracting the offset.
-              return new Date(nowInJst.getTime() - jstOffset).toISOString()
+              // Create a date for the end of the current day in JST using UTC components.
+              const endOfTodayJst = new Date(
+                Date.UTC(
+                  jstNow.getUTCFullYear(),
+                  jstNow.getUTCMonth(),
+                  jstNow.getUTCDate(),
+                  23, 59, 59, 999
+                )
+              );
+
+              // Convert the JST end-of-day timestamp back to a UTC timestamp for the Notion API.
+              return new Date(endOfTodayJst.getTime() - jstOffset).toISOString();
             })(),
           },
         },
