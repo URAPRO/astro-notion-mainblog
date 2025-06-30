@@ -83,7 +83,18 @@ export async function getAllPosts(): Promise<Post[]> {
         {
           property: 'Date',
           date: {
-            on_or_before: new Date().toISOString(),
+            on_or_before: (() => {
+              // JST基準で今日の終わり（23:59:59 JST）を取得
+              const now = new Date()
+              const jstOffset = 9 * 60 * 60 * 1000 // JST is UTC+9
+              const jstNow = new Date(now.getTime() + jstOffset)
+              
+              // JST基準で今日の日付の終わり（23:59:59.999）を設定
+              const endOfToday = new Date(jstNow.getFullYear(), jstNow.getMonth(), jstNow.getDate(), 23, 59, 59, 999)
+              
+              // UTCに戻して返す
+              return new Date(endOfToday.getTime() - jstOffset).toISOString()
+            })(),
           },
         },
       ],
