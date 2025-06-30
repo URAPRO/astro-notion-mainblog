@@ -85,15 +85,14 @@ export async function getAllPosts(): Promise<Post[]> {
           date: {
             on_or_before: (() => {
               // JST基準で今日の終わり（23:59:59 JST）を取得
-              const now = new Date()
-              const jstOffset = 9 * 60 * 60 * 1000 // JST is UTC+9
-              const jstNow = new Date(now.getTime() + jstOffset)
+              const jstOffset = 9 * 60 * 60 * 1000; // JST is UTC+9
+              const nowInJst = new Date(Date.now() + jstOffset);
+
+              // Set the time to the end of the day in JST using UTC methods for timezone safety.
+              nowInJst.setUTCHours(23, 59, 59, 999);
               
-              // JST基準で今日の日付の終わり（23:59:59.999）を設定
-              const endOfToday = new Date(jstNow.getFullYear(), jstNow.getMonth(), jstNow.getDate(), 23, 59, 59, 999)
-              
-              // UTCに戻して返す
-              return new Date(endOfToday.getTime() - jstOffset).toISOString()
+              // Convert back to the correct UTC time by subtracting the offset.
+              return new Date(nowInJst.getTime() - jstOffset).toISOString()
             })(),
           },
         },
