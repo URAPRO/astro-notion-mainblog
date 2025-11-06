@@ -179,6 +179,7 @@ export interface Embed {
 }
 
 export interface Bookmark {
+  Caption: RichText[]
   Url: string
 }
 
