@@ -24,8 +24,8 @@ const [allPosts, recentPosts, rankedPosts, tags] = await Promise.all([
   getAllTags(),
 ])
 
-const internalPosts = allPosts.filter((post) => !post.ExternalLink).slice(0, 6)
-const notePosts = allPosts.filter((post) => post.ExternalLink && post.ExternalLink.includes('note.com')).slice(0, 6)
+const internalPosts = allPosts.filter((post) => !post.ExternalLink).slice(0, 4)
+const notePosts = allPosts.filter((post) => post.ExternalLink && post.ExternalLink.includes('note.com')).slice(0, 4)
 ---
 
 <Layout 
