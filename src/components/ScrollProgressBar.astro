@@ -59,6 +59,14 @@
       window.addEventListener('scroll', requestTick, { passive: true });
       window.addEventListener('resize', requestTick);
 
+      const cleanup = () => {
+        window.removeEventListener('scroll', requestTick);
+        window.removeEventListener('resize', requestTick);
+        document.removeEventListener('astro:before-swap', cleanup);
+      };
+
+      document.addEventListener('astro:before-swap', cleanup);
+
       // 初期描画
       updateProgress();
     }

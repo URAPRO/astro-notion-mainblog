@@ -13,31 +13,23 @@ const { block, headings } = Astro.props
 
 function getVariantClass(block: interfaces.Block): string {
   const icon = block.Callout?.Icon
-  if (!icon || icon.Type !== 'emoji') {
+  if (!icon || icon.Type !== 'emoji' || !icon.Emoji) {
     return ''
   }
+
+  const emojiVariants = {
+    'callout-tip': ['💡', '✨', '🌟'],
+    'callout-warning': ['⚠️', '⚠', '🚨', '🔥'],
+    'callout-note': ['📝', '✏️'],
+    'callout-info': ['ℹ️', 'ℹ'],
+  } as const
 
   const emoji = icon.Emoji
-  if (!emoji) {
-    return ''
-  }
 
-  const tipEmojis = ['💡', '✨', '🌟']
-  const warningEmojis = ['⚠️', '⚠', '🚨', '🔥']
-  const noteEmojis = ['📝', '✏️']
-  const infoEmojis = ['ℹ️', 'ℹ']
-
-  if (tipEmojis.includes(emoji)) {
-    return 'callout-tip'
-  }
-  if (warningEmojis.includes(emoji)) {
-    return 'callout-warning'
-  }
-  if (noteEmojis.includes(emoji)) {
-    return 'callout-note'
-  }
-  if (infoEmojis.includes(emoji)) {
-    return 'callout-info'
+  for (const [className, emojis] of Object.entries(emojiVariants)) {
+    if (emojis.includes(emoji as (typeof emojis)[number])) {
+      return className
+    }
   }
 
   return ''

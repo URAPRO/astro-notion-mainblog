@@ -53,8 +53,8 @@ const extractPlainText = (richTexts: RichText[] | undefined): string => {
   .toc-sidebar {
     margin-bottom: 1.5rem; /* 他のウィジェットとの間隔調整 */
     position: sticky;
-    top: 20px;
-    max-height: calc(100vh - 60px);
+    top: var(--toc-sticky-top);
+    max-height: calc(100vh - var(--toc-sticky-bottom-gap));
     overflow-y: auto;
   }
   .toc-title {
