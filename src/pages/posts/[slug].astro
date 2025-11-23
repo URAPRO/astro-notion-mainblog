@@ -32,6 +32,7 @@ import PostRelativeLink from '../../components/PostRelativeLink.astro'
 import BlogPostsLink from '../../components/BlogPostsLink.astro'
 import BlogTagsLink from '../../components/BlogTagsLink.astro'
 import TableOfContentsSidebar from '../../components/TableOfContentsSidebar.astro';
+import ScrollProgressBar from '../../components/ScrollProgressBar.astro';
 import styles from '../../styles/blog.module.css'
 import RelatedPosts from '../../components/RelatedPosts.astro';
 
@@ -210,6 +211,7 @@ const breadcrumbLd = {
   <script type="application/ld+json" set:html={JSON.stringify(breadcrumbLd)} slot="head-append" />
 
   <div slot="main" class={`${styles.main} ${styles.postPage}`}>
+    <ScrollProgressBar />
     <div class={styles.post}>
       <PostTitle post={post} enableLink={false} />
       <div style="display: flex; flex-wrap: wrap; column-gap: 1em; align-items: baseline;">

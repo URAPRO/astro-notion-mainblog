@@ -52,9 +52,10 @@ const extractPlainText = (richTexts: RichText[] | undefined): string => {
 <style>
   .toc-sidebar {
     margin-bottom: 1.5rem; /* 他のウィジェットとの間隔調整 */
-    /* padding: 1rem; */ /* 親のasideにパディングがあるので、こちらは少なくするか削除 */
-    /* background-color: #f9f9f9; */ /* 背景色は親に合わせるためコメントアウト */
-    /* border-radius: var(--radius); */ /* 必要であれば */
+    position: sticky;
+    top: 20px;
+    max-height: calc(100vh - 60px);
+    overflow-y: auto;
   }
   .toc-title {
     font-size: 1.1rem; /* 他のサイドバーウィジェットのタイトルと合わせる */
@@ -91,5 +92,13 @@ const extractPlainText = (richTexts: RichText[] | undefined): string => {
   }
   .toc-item-level-3 {
     padding-left: 2em; 
+  }
+
+  @media (max-width: 640px) {
+    .toc-sidebar {
+      position: static;
+      max-height: none;
+      overflow: visible;
+    }
   }
 </style> 
