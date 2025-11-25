@@ -155,6 +155,10 @@ const bookmarkURLMap = await buildURLToHTMLMap(bookmarkURLs)
                     productInfo.price = line.substring(6).trim();
                   } else if (line.startsWith('updatedAt:')) {
                     productInfo.updatedAt = line.substring(10).trim();
+                  } else if (line.startsWith('author:')) {
+                    productInfo.author = line.substring(7).trim();
+                  } else if (line.startsWith('publisher:')) {
+                    productInfo.publisher = line.substring(10).trim();
                   }
                 }
                 
