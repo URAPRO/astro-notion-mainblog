@@ -10,35 +10,9 @@ export interface Props {
 }
 
 const { block, headings } = Astro.props
-
-function getVariantClass(block: interfaces.Block): string {
-  const icon = block.Callout?.Icon
-  if (!icon || icon.Type !== 'emoji' || !icon.Emoji) {
-    return ''
-  }
-
-  const emojiVariants = {
-    'callout-tip': ['💡', '✨', '🌟'],
-    'callout-warning': ['⚠️', '⚠', '🚨', '🔥'],
-    'callout-note': ['📝', '✏️'],
-    'callout-info': ['ℹ️', 'ℹ'],
-  } as const
-
-  const emoji = icon.Emoji
-
-  for (const [className, emojis] of Object.entries(emojiVariants)) {
-    if (emojis.includes(emoji as (typeof emojis)[number])) {
-      return className
-    }
-  }
-
-  return ''
-}
-
-const variantClass = getVariantClass(block)
 ---
 
-<div class={`callout ${variantClass} ${snakeToKebab(block.Callout.Color)}`}>
+<div class={`callout ${snakeToKebab(block.Callout.Color)}`}>
   {
     block.Callout.Icon && (
       <div class="icon">
@@ -66,87 +40,28 @@ const variantClass = getVariantClass(block)
 
 <style>
   .callout {
-    position: relative;
     display: flex;
-    margin: 0.6rem auto;
-    padding: 14px 14px 14px 14px;
+    margin: 0.4rem auto;
+    padding: 16px 12px;
     width: 100%;
-    font-size: 0.98rem;
+    font-size: 1rem;
     font-weight: 400;
     line-height: 1.6rem;
-    border-radius: 8px;
+    border-radius: 3px;
     border-width: 1px;
     border-style: solid;
-    border-color: rgba(0, 0, 0, 0.04);
-    background: rgba(245, 246, 247, 0.9);
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+    border-color: transparent;
+    background: rgba(235, 236, 237, 0.6);
   }
-
-  .callout::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 10px;
-    bottom: 10px;
-    width: 4px;
-    border-radius: 999px;
-    background: rgba(0, 0, 0, 0.06);
-  }
-
   .callout > div {
     margin: 0;
     line-height: 1.5rem;
   }
-
   .callout > div.icon {
     margin-right: 0.7rem;
-    font-size: 1.2rem;
-    display: flex;
-    align-items: flex-start;
   }
-
   .callout > div.icon > img {
     width: 1.2rem;
     height: 1.2rem;
-  }
-
-  /* 用途別バリエーション（雑誌風） */
-  .callout-tip {
-    background: linear-gradient(135deg, #fff8e1, #fff3cd);
-    border-color: rgba(255, 193, 7, 0.4);
-  }
-  .callout-tip::before {
-    background: #ffb74d;
-  }
-
-  .callout-warning {
-    background: linear-gradient(135deg, #fff5f5, #ffe0e0);
-    border-color: rgba(244, 67, 54, 0.35);
-  }
-  .callout-warning::before {
-    background: #ef5350;
-  }
-
-  .callout-note {
-    background: linear-gradient(135deg, #f5f7ff, #e8edff);
-    border-color: rgba(63, 81, 181, 0.35);
-  }
-  .callout-note::before {
-    background: #5c6bc0;
-  }
-
-  .callout-info {
-    background: linear-gradient(135deg, #f3fbff, #e0f4ff);
-    border-color: rgba(33, 150, 243, 0.35);
-  }
-  .callout-info::before {
-    background: #42a5f5;
-  }
-
-  @media (max-width: 640px) {
-    .callout {
-      padding: 12px 12px 12px 12px;
-      font-size: 0.95rem;
-    }
   }
 </style>
