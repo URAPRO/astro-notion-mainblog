@@ -13,13 +13,16 @@ interface Props {
   title: string;
   tags?: SelectProperty[];
   socialShareHashtags?: string;
+  variant?: 'default' | 'inline';
 }
 
 export const SocialShareButtons: React.FC<Props> = (props) => {
-  const { url, title, tags = [], socialShareHashtags } = props;
+  const { url, title, tags = [], socialShareHashtags, variant = 'default' } = props;
+  const isInline = variant === 'inline';
+
   const buttonStyle = {
-    padding: "4px",
-    margin: "4px",
+    padding: isInline ? "2px" : "4px",
+    margin: isInline ? "2px" : "4px",
     alignItems: "center"
   };
 
@@ -37,24 +40,56 @@ export const SocialShareButtons: React.FC<Props> = (props) => {
 
   // アイコン共通の設定
   const iconProps = {
-    size: 40,
+    size: isInline ? 32 : 40,
     round: false,
     borderRadius: 8,
-    bgStyle: { fill: '#f5f5f5' },
-    iconFillColor: '#333333'
+    bgStyle: { fill: isInline ? '#f1f5f9' : '#f5f5f5' },
+    iconFillColor: '#0f172a'
   };
 
+  if (isInline) {
+    return (
+      <div className="share-buttons-inline" style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.5rem',
+        padding: '0.25rem 0',
+        flexWrap: 'wrap'
+      }}>
+        <span style={{
+          fontWeight: 600,
+          color: '#0f172a',
+          fontSize: '0.95rem'
+        }}>シェア</span>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <TwitterShareButton url={url} title={title} hashtags={allHashtags} style={buttonStyle}>
+            <XIcon {...iconProps} />
+          </TwitterShareButton>
+          <ThreadsShareButton url={url} title={`${title} ${hashtagsString}`} style={buttonStyle}>
+            <ThreadsIcon {...iconProps} />
+          </ThreadsShareButton>
+          <FacebookShareButton url={url} style={buttonStyle}>
+            <FacebookIcon {...iconProps} />
+          </FacebookShareButton>
+          <HatenaShareButton url={url} style={buttonStyle}>
+            <HatenaIcon {...iconProps} />
+          </HatenaShareButton>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="share-buttons-container" style={{ 
-      marginTop: '1.5rem', 
+    <div className="share-buttons-container" style={{
+      marginTop: '1.5rem',
       marginBottom: '1.5rem',
       padding: '0.75rem',
       borderTop: '1px solid #eaeaea',
       borderBottom: '1px solid #eaeaea',
     }}>
-      <h3 style={{ 
-        fontSize: '1rem', 
-        fontWeight: 600, 
+      <h3 style={{
+        fontSize: '1rem',
+        fontWeight: 600,
         marginBottom: '0.75rem',
         color: '#5f76a6',
         display: 'inline-block',

@@ -51,42 +51,51 @@ const extractPlainText = (richTexts: RichText[] | undefined): string => {
 
 <style>
   .toc-sidebar {
-    margin-bottom: 1.5rem; /* 他のウィジェットとの間隔調整 */
+    margin: 0;
+    padding: 0.6rem 0.75rem;
+    background: linear-gradient(135deg, #f8fafc, #eef2ff);
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
   }
   .toc-title {
-    font-size: 1.1rem; /* 他のサイドバーウィジェットのタイトルと合わせる */
-    font-weight: bold;
-    color: var(--fg); /* 親要素の文字色を継承 or 明示 */
-    margin-top: 0;
-    margin-bottom: 0.6rem;
-    border-bottom: 1px solid #ddd; /* 区切り線など */
+    font-size: 1rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 0.6rem;
     padding-bottom: 0.4rem;
+    border-bottom: 1px solid #e2e8f0;
+    letter-spacing: 0.01em;
   }
   .toc-list {
     list-style: none;
-    padding-left: 0.5em; /* 少しインデント */
+    padding-left: 0;
     margin: 0;
-    font-size: 0.9rem; /* リンクのフォントサイズ */
+    font-size: 0.95rem;
   }
   .toc-item {
-    margin-bottom: 0.4rem;
-    line-height: 1.4;
+    margin-bottom: 0.45rem;
+    line-height: 1.5;
   }
   .toc-item a {
     text-decoration: none;
-    color: var(--accents-1);
+    color: #334155;
+    padding: 0.25rem 0.35rem;
+    border-radius: 8px;
+    display: inline-block;
+    transition: color 0.2s ease, background 0.2s ease;
   }
   .toc-item a:hover {
-    text-decoration: underline;
-    color: var(--fg); /* ホバー時の色を少し濃くするなど */
+    color: #1d4ed8;
+    background: rgba(37, 99, 235, 0.08);
   }
   .toc-item-level-1 {
-    font-weight: bold; /* レベル1を少し強調 */
+    font-weight: 700;
   }
   .toc-item-level-2 {
-    padding-left: 1em; 
+    padding-left: 0.75em;
   }
   .toc-item-level-3 {
-    padding-left: 2em; 
+    padding-left: 1.5em;
   }
-</style> 
+</style>

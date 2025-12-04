@@ -62,7 +62,7 @@
 
 /* ポストページのメインコンテンツ幅を調整 */
 .postPage {
-  max-width: 800px;
+  max-width: 1080px;
 }
 
 /* ホバー効果をindexページのポスト一覧のみに限定 */
@@ -80,6 +80,224 @@
 .post {
   margin: 0;
   border-top: none;
+}
+
+.post :global(p),
+.post :global(li),
+.post :global(blockquote),
+.post :global(figcaption),
+.post :global(table) {
+  line-height: 1.8;
+  color: #0f172a;
+}
+
+.post :global(h1),
+.post :global(h2),
+.post :global(h3),
+.post :global(h4),
+.post :global(h5),
+.post :global(h6) {
+  color: #0b1324;
+  line-height: 1.3;
+  font-weight: 800;
+  margin: 2rem 0 1rem;
+}
+
+.post :global(h2) {
+  font-size: 1.5rem;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 0.5rem;
+}
+
+.post :global(h3) {
+  font-size: 1.25rem;
+}
+
+.post :global(h4) {
+  font-size: 1.05rem;
+  color: #1f2937;
+}
+
+.post :global(a) {
+  color: #2563eb;
+  text-decoration: underline;
+  text-decoration-thickness: 0.08em;
+  text-decoration-color: rgba(37, 99, 235, 0.35);
+  transition: color 0.2s ease, text-decoration-color 0.2s ease;
+}
+
+.post :global(a:hover) {
+  color: #1d4ed8;
+  text-decoration-color: rgba(29, 78, 216, 0.65);
+}
+
+.post :global(blockquote) {
+  margin: 1.4rem 0;
+  padding: 1rem 1.2rem;
+  border-left: 4px solid #6366f1;
+  background: linear-gradient(120deg, #f8fafc, #eef2ff);
+  border-radius: 12px;
+  color: #0f172a;
+}
+
+.post :global(ul),
+.post :global(ol) {
+  padding-left: 1.4rem;
+  margin: 0.5rem 0 1.4rem;
+  color: #0f172a;
+}
+
+.post :global(code) {
+  background: #eef2ff;
+  color: #0f172a;
+  border-radius: 8px;
+  padding: 0.15rem 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.95em;
+  border: 1px solid #cbd5e1;
+}
+
+.post :global(pre) {
+  margin: 1.6rem 0;
+  padding: 1.2rem 1.4rem;
+  background: #0f172a;
+  color: #e2e8f0;
+  border-radius: 14px;
+  border: 1px solid #1e293b;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.45);
+  overflow-x: auto;
+}
+
+.post :global(pre code) {
+  background: transparent;
+  color: inherit;
+  font-size: 0.95rem;
+  line-height: 1.7;
+  padding: 0;
+}
+
+.post :global(hr) {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #cbd5e1, transparent);
+  margin: 2rem 0;
+}
+
+.post :global(img) {
+  border-radius: 12px;
+}
+
+.post :global(table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.25rem 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.post :global(th),
+.post :global(td) {
+  padding: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.topActionBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  padding: 0.5rem 0 1.25rem;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 1rem;
+}
+
+.postMetaGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #475569;
+  font-size: 0.95rem;
+}
+
+.postContentLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 2rem;
+  align-items: start;
+  margin-top: 1.5rem;
+}
+
+.postContent {
+  min-width: 0;
+}
+
+.tocDesktop {
+  position: sticky;
+  top: 96px;
+  align-self: start;
+}
+
+.tocMobile {
+  display: none;
+  margin-bottom: 1rem;
+}
+
+.tocDisclosure {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f8fafc, #eef2ff);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+.tocDisclosure summary {
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+  font-weight: 700;
+  color: #0f172a;
+  list-style: none;
+}
+
+.tocDisclosure[open] summary {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.tocDisclosure summary::-webkit-details-marker {
+  display: none;
+}
+
+.sectionDivider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #cbd5e1, transparent);
+  margin: 0.5rem 0;
+}
+
+.adSection {
+  margin: 2.5rem 0 1.5rem;
+}
+
+.adWrapper {
+  padding: 1.5rem 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  text-align: center;
+  box-shadow: 0 12px 35px rgba(15, 23, 42, 0.08);
+}
+
+@media (max-width: 1024px) {
+  .postContentLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .tocDesktop {
+    display: none;
+  }
+
+  .tocMobile {
+    display: block;
+  }
 }
 
 .post > *,
@@ -169,6 +387,18 @@
 }
 
 @media (max-width: 640px) {
+  .topActionBar {
+    align-items: flex-start;
+  }
+
+  .postMetaGroup {
+    width: 100%;
+  }
+
+  .adWrapper {
+    padding: 1.25rem 0.85rem;
+  }
+
   .postDetail {
     flex-direction: row;
     align-items: flex-start;
