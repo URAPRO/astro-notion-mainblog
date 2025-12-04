@@ -3,6 +3,7 @@ import { PUBLIC_GA_TRACKING_ID, ENABLE_LIGHTBOX } from '../server-constants.ts'
 import { getDatabase, getPostBySlug } from '../lib/notion/client.ts'
 import { getNavLink, getStaticFilePath, filePath } from '../lib/blog-helpers.ts'
 import '../styles/syntax-coloring.css'
+import '../styles/layout.css'
 import GoogleAnalytics from '../components/GoogleAnalytics.astro'
 import SearchModal from '../components/SearchModal.astro'
 import SearchButton from '../components/SearchButton.astro'
@@ -33,6 +34,9 @@ const siteOGImage = new URL(
 
 // og:type の決定
 const ogType = Astro.url.pathname.startsWith(getNavLink('/posts')) ? 'article' : 'website';
+
+const hasAsideContent = Astro.slots.has('aside')
+const showSupplementary = !!profilePost || hasAsideContent
 
 let coverImageURL: string | undefined
 if (database.Cover) {
@@ -104,70 +108,111 @@ if (profilePost?.FeaturedImage?.Url) {
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6921846261223866"
     crossorigin="anonymous"></script>
     <GoogleAnalytics trackingId={PUBLIC_GA_TRACKING_ID} />
-    <div class="container">
-      <div>
-        <main>
+    <div class="page-shell">
+      {
+        coverImageURL && (
+          <div class="cover">
+            <img src={coverImageURL} alt={`${database.Title} のカバー画像`} loading="lazy" />
+          </div>
+        )
+      }
+
+      <header class="site-header">
+        <a class="brand" href={getNavLink('/')}>
           {
-            coverImageURL && (
-              <div class="cover">
-                <img src={coverImageURL} alt={`${database.Title} のカバー画像`} loading="lazy" />
-              </div>
+            database.Icon && database.Icon.Type === 'emoji' && database.Icon.Emoji ? (
+              <>
+                <span>{database.Icon.Emoji}</span>
+                {database.Title}
+              </>
+            ) : database.Icon && database.Icon.Type === 'external' && database.Icon.Url ? (
+              <>
+                <img src={database.Icon.Url} alt="Site icon image" />
+                {database.Title}
+              </>
+            ) : database.Icon && database.Icon.Type === 'file' && customIconURL ? (
+              <>
+                <img
+                  src={customIconURL}
+                  class="custom-icon"
+                  alt="Site icon image"
+                />
+                {database.Title}
+              </>
+            ) : (
+              database.Title
             )
           }
-          <div class="content">
-            <header>
-              <h1>
-                <a href={getNavLink('/')}>
-                  {
-                    database.Icon && database.Icon.Type === 'emoji' && database.Icon.Emoji ? (
-                      <>
-                        <span>{database.Icon.Emoji}</span>
-                        {database.Title}
-                      </>
-                    ) : database.Icon && database.Icon.Type === 'external' && database.Icon.Url ? (
-                      <>
-                        <img src={database.Icon.Url} alt="Site icon image" />
-                        {database.Title}
-                      </>
-                    ) : database.Icon && database.Icon.Type === 'file' && customIconURL ? (
-                      <>
-                        <img
-                          src={customIconURL}
-                          class="custom-icon"
-                          alt="Site icon image"
-                        />
-                        {database.Title}
-                      </>
-                    ) : (
-                      database.Title
-                    )
-                  }
+        </a>
+        <p class="site-tagline">{database.Description}</p>
+      </header>
+
+      <section class="hero">
+        <div class="hero-grid">
+          <div class="hero-copy">
+            <p class="hero-kicker">Notion powered journal</p>
+            <h1 class="hero-title">{database.Title}</h1>
+            <p class="hero-lead">{effectiveDescription}</p>
+            <div class="hero-actions">
+              <SearchButton />
+              <a class="cta-button" href={getNavLink('/posts')}>
+                記事一覧を見る
+              </a>
+            </div>
+            <div class="hero-tags" aria-label="主要カテゴリーとタグ">
+              <a class="tag-chip" href={getNavLink('/posts')}>
+                最新記事
+              </a>
+              <a class="tag-chip" href={getNavLink('/note')}>
+                ノート
+              </a>
+              {showSupplementary && (
+                <a class="tag-chip" href="#categories">
+                  カテゴリーを探す
                 </a>
-              </h1>
-              <div class="description">
-                {database.Description}
-              </div>
-            </header>
-
-            <slot name="main" />
-
-            <footer>
-              <div>
-                <span>Powered by&nbsp;</span>
-                <a href="https://github.com/otoyo/astro-notion-blog"
-                  >astro-notion-blog</a
-                >
-              </div>
-            </footer>
+              )}
+            </div>
           </div>
-        </main>
+          <div class="hero-panel">
+            <div class="hero-panel-card">
+              <p class="panel-label">おすすめの読み方</p>
+              <ul>
+                <li>キーワード検索で気になる記事をすぐに発見。</li>
+                <li>カテゴリーからまとめて読み込む。</li>
+                <li>ノートで実験中のアイデアをチェック。</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
 
-        <aside>
-          <SearchButton />
-          <ProfileSidebar profileIconURL={profileIconURL} />
-          <slot name="aside" />
-        </aside>
-      </div>
+      <main class="page-content">
+        <slot name="main" />
+
+        {showSupplementary && (
+          <section id="categories" class="supplementary">
+            {profilePost && (
+              <div class="supplementary-panel">
+                <ProfileSidebar profileIconURL={profileIconURL} />
+              </div>
+            )}
+            {hasAsideContent && (
+              <div class="supplementary-panel">
+                <slot name="aside" />
+              </div>
+            )}
+          </section>
+        )}
+
+        <footer>
+          <div>
+            <span>Powered by&nbsp;</span>
+            <a href="https://github.com/otoyo/astro-notion-blog"
+              >astro-notion-blog</a
+            >
+          </div>
+        </footer>
+      </main>
     </div>
 
     <SearchModal />
@@ -179,199 +224,6 @@ if (profilePost?.FeaturedImage?.Url) {
   </body>
 </html>
 
-<style>
-  .container {
-    margin: 0 auto;
-    max-width: 1280px;
-    min-height: 100vh;
-    width: 100%;
-  }
-
-  .container > div {
-    display: flex;
-    max-width: 1280px;
-    width: 100%;
-  }
-  @media (max-width: 640px) {
-    .container > div {
-      display: block;
-      width: 100%;
-    }
-  }
-
-  main {
-    flex: 1;
-    order: 2;
-    justify-content: space-between;
-    min-width: 0;
-    max-width: 100%;
-  }
-  @media (max-width: 640px) {
-    main {
-      order: 1;
-      width: 100%;
-      max-width: 100%;
-    }
-  }
-
-  aside {
-    order: 1;
-    width: 250px;
-    padding: 35px 20px;
-    background-color: #eee3c9;
-    position: relative;
-    height: auto;
-    flex-shrink: 0;
-  }
-  @media (max-width: 640px) {
-    aside {
-      order: 2;
-      width: 100%;
-    }
-  }
-
-  div.cover {
-  }
-  div.cover img {
-    display: block;
-    width: 100%;
-    height: 20vh;
-    object-fit: cover;
-    object-position: center 60%;
-  }
-
-  div.content {
-    padding: 20px 40px;
-    overflow-wrap: break-word;
-    word-wrap: break-word;
-    word-break: break-word;
-    min-width: 0;
-    width: 100%;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-  }
-  
-  div.content > * {
-    max-width: 100%;
-    box-sizing: border-box;
-    overflow-wrap: break-word;
-    word-wrap: break-word;
-    flex-shrink: 1;
-    min-width: 0;
-  }
-  
-  @media (max-width: 640px) {
-    div.content {
-      padding-top: 0;
-      padding-bottom: 0;
-      padding-left: 24px;
-      padding-right: 24px;
-      width: 100%;
-      max-width: 100%;
-    }
-    
-    div.content > * {
-      width: auto;
-      max-width: none;
-      margin-left: 0;
-      margin-right: 0;
-    }
-  }
-  @media (max-width: 410px) {
-    div.content {
-      padding-left: 16px;
-      padding-right: 16px;
-    }
-  }
-  @media (max-width: 320px) {
-    div.content {
-      padding-left: 12px;
-      padding-right: 12px;
-    }
-  }
-
-  main header {
-    padding: 20px 0 20px;
-  }
-  main header h1 {
-    font-weight: 700;
-    color: #333;
-  }
-  main header h1 a {
-    display: block;
-    color: inherit;
-  }
-  main header h1 a:hover {
-    color: inherit;
-  }
-  main header h1 a span,
-  main header h1 a img {
-    display: inline-block;
-    font-size: 1.1em;
-  }
-  main header h1 a span {
-    margin-right: 0.3em;
-    margin-left: -0.1rem;
-  }
-  main header h1 a img {
-    width: 1.2em;
-    height: 1.2em;
-    margin-right: 0.2em;
-    margin-left: -0.3rem;
-    vertical-align: sub;
-  }
-  main header h1 a img.custom-icon {
-    border-radius: var(--radius);
-  }
-
-  main header div.description {
-    padding: 0.3rem 0 0.6rem;
-    font-size: 0.95rem;
-  }
-
-  main footer {
-    margin: 30px 0 10px;
-    text-align: center;
-    font-size: 0.6rem;
-  }
-  @media (max-width: 640px) {
-    main footer {
-      margin: 0 auto 30px;
-    }
-  }
-  main footer span {
-    color: #777;
-  }
-  main footer a {
-    color: inherit;
-    text-decoration: underline;
-  }
-
-  .profile-link {
-    margin: 20px 0;
-  }
-  .profile-link a {
-    display: flex;
-    align-items: center;
-    color: inherit;
-    text-decoration: none;
-  }
-  .profile-link a:hover {
-    text-decoration: underline;
-  }
-  .profile-link img.profile-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    margin-right: 10px;
-    object-fit: cover;
-  }
-  .profile-link span {
-    font-size: 0.9rem;
-  }
-</style>
-
 <style is:global>
   :root {
     --gap-quarter: 0.25rem;
@@ -379,12 +231,12 @@ if (profilePost?.FeaturedImage?.Url) {
     --gap: 1rem;
     --gap-double: 2rem;
 
-    --bg: #EEEEEE; /* bodyのBG */
-    --fg: #333333; /* 基本文字色 */
-    --accents-1: #555555; /* リンク色 */
-    --accents-2: #555555;
-    --accents-3: #555555;
-    --geist-foreground: #000000;
+    --bg: linear-gradient(180deg, #f8fbff 0%, #fff9f1 55%, #ffffff 100%);
+    --fg: #242424; /* 基本文字色 */
+    --accents-1: #f59e0b; /* リンク色 */
+    --accents-2: #111111;
+    --accents-3: #6b7280;
+    --geist-foreground: #0f172a;
     --geist-success: #669900;
 
     --radius: 4px;
@@ -407,7 +259,7 @@ if (profilePost?.FeaturedImage?.Url) {
   body {
     padding: 0;
     margin: 0;
-    font-size: 14px;
+    font-size: 15px;
   }
 
   body {
@@ -418,14 +270,9 @@ if (profilePost?.FeaturedImage?.Url) {
       Helvetica, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN',
       'Hiragino Sans GB', メイリオ, Meiryo, 'Apple Color Emoji', Arial,
       sans-serif, 'Segoe UI Emoji', 'Segoe UI Symbol';
-
-    /*background-image: radial-gradient(#ddd 1px, transparent 1px),
-      radial-gradient(#ddd 1px, transparent 1px);*/
-    background-position: 0 0, 25px 25px;
     background-attachment: fixed;
-    background-size: 50px 50px;
+    background-size: cover;
 
-    /* Hack */
     overflow-x: hidden;
 
     -webkit-font-smoothing: antialiased;
