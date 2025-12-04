@@ -69,7 +69,6 @@ const tocHeadings = blocks.filter(
     block.Type === 'heading_2' ||
     block.Type === 'heading_3'
 );
-console.log("tocHeadings:", JSON.stringify(tocHeadings, null, 2)); // デバッグ用
 
 const fileAtacchedBlocks = extractTargetBlocks('image', blocks)
   .concat(extractTargetBlocks('file', blocks))
@@ -214,31 +213,85 @@ const breadcrumbLd = {
     <ScrollProgressBar />
     <div class={styles.post}>
       <PostTitle post={post} enableLink={false} />
-      <div style="display: flex; flex-wrap: wrap; column-gap: 1em; align-items: baseline;">
-        <PostDate post={post} />
-        <PostUpdateDate post={post} />
-        <PostReadingTime readingTime={readingTime} />
+      <div class={styles.topActionBar}>
+        <div class={styles.postMetaGroup}>
+          <PostReadingTime readingTime={readingTime} />
+          <PostDate post={post} />
+          <PostUpdateDate post={post} />
+        </div>
+        <SocialShareButtons
+          title={post.Title}
+          url={getPostFullLink(post)}
+          tags={post.Tags}
+          socialShareHashtags={post.SocialShareHashtags}
+          variant="inline"
+          client:load
+        />
       </div>
       <PostTags post={post} enableLink={true} />
-      <PostBody blocks={blocks} slug={slug} />
-      <SocialShareButtons title={post.Title} url={getPostFullLink(post)} tags={post.Tags} socialShareHashtags={post.SocialShareHashtags} client:load/>
 
-      <!-- Google AdSense 広告 - 記事下部 -->
-      <div style="margin: 2rem 0; text-align: center;">
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6921846261223866"
-             crossorigin="anonymous"></script>
-        <!-- mainblog footer -->
-        <ins class="adsbygoogle"
-             style="display:block"
-             data-ad-client="ca-pub-6921846261223866"
-             data-ad-slot="5442558002"
-             data-ad-format="auto"
-             data-full-width-responsive="true"></ins>
-        <script>
-             (window as any).adsbygoogle = (window as any).adsbygoogle || [];
-             (window as any).adsbygoogle.push({});
-        </script>
-      </div>
+      {tocHeadings && tocHeadings.length > 0 ? (
+        <div class={styles.postContentLayout}>
+          <div class={styles.tocMobile}>
+            <details class={styles.tocDisclosure}>
+              <summary>目次を開く</summary>
+              <TableOfContentsSidebar headings={tocHeadings} />
+            </details>
+          </div>
+          <div class={styles.postContent}>
+            <PostBody blocks={blocks} slug={slug} />
+            <div class={styles.adSection}>
+              <div class={styles.sectionDivider}></div>
+              <div class={styles.adWrapper}>
+                <!-- Google AdSense 広告 - 記事下部 -->
+                <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6921846261223866"
+                  crossorigin="anonymous"></script>
+                <!-- mainblog footer -->
+                <ins class="adsbygoogle"
+                  style="display:block"
+                  data-ad-client="ca-pub-6921846261223866"
+                  data-ad-slot="5442558002"
+                  data-ad-format="auto"
+                  data-full-width-responsive="true"></ins>
+                <script>
+                  const adsbygoogle = (window as Window & { adsbygoogle?: unknown[] });
+                  adsbygoogle.adsbygoogle = adsbygoogle.adsbygoogle || [];
+                  adsbygoogle.adsbygoogle.push({});
+                </script>
+              </div>
+              <div class={styles.sectionDivider}></div>
+            </div>
+          </div>
+          <aside class={styles.tocDesktop}>
+            <TableOfContentsSidebar headings={tocHeadings} />
+          </aside>
+        </div>
+      ) : (
+        <div class={styles.postContent}>
+          <PostBody blocks={blocks} slug={slug} />
+          <div class={styles.adSection}>
+            <div class={styles.sectionDivider}></div>
+            <div class={styles.adWrapper}>
+              <!-- Google AdSense 広告 - 記事下部 -->
+              <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6921846261223866"
+                crossorigin="anonymous"></script>
+              <!-- mainblog footer -->
+              <ins class="adsbygoogle"
+                style="display:block"
+                data-ad-client="ca-pub-6921846261223866"
+                data-ad-slot="5442558002"
+                data-ad-format="auto"
+                data-full-width-responsive="true"></ins>
+              <script>
+                const adsbygoogle = (window as Window & { adsbygoogle?: unknown[] });
+                adsbygoogle.adsbygoogle = adsbygoogle.adsbygoogle || [];
+                adsbygoogle.adsbygoogle.push({});
+              </script>
+            </div>
+            <div class={styles.sectionDivider}></div>
+          </div>
+        </div>
+      )}
 
       <RelatedPosts currentPost={post} allPosts={allPosts} />
 
@@ -249,7 +302,6 @@ const breadcrumbLd = {
   </div>
 
   <div slot="aside" class="aside">
-    <TableOfContentsSidebar headings={tocHeadings} />
     <BlogPostsLink heading="最新記事" posts={recentPosts} />
     <BlogPostsLink heading="おすすめ記事" posts={rankedPosts} />
     <BlogTagsLink heading="カテゴリー" tags={tags} />
