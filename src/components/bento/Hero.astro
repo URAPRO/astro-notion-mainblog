@@ -1,0 +1,78 @@
+---
+export interface CTA {
+  label: string
+  href: string
+  external?: boolean
+}
+
+export interface HeroProps {
+  eyebrow?: string
+  title: string
+  subtitle?: string
+  description: string
+  highlights?: string[]
+  ctas?: CTA[]
+}
+
+const {
+  eyebrow = 'Living Archive',
+  title,
+  subtitle = '',
+  description,
+  highlights = [],
+  ctas = [],
+} = Astro.props
+---
+
+<section class="rounded-[32px] border border-[#F0F0F2] bg-white/90 p-8 shadow-floating ring-1 ring-black/5 backdrop-blur-sm">
+  <p class="text-xs font-semibold uppercase tracking-[0.4em] text-accent">
+    {eyebrow}
+  </p>
+  <div class="mt-6 space-y-5">
+    <h1 class="text-4xl font-semibold leading-[1.15] tracking-tight text-text sm:text-[2.9rem]">
+      {title}
+    </h1>
+    {
+      subtitle && (
+        <p class="text-lg font-medium text-subtle sm:text-xl">
+          {subtitle}
+        </p>
+      )
+    }
+    <p class="max-w-3xl text-base text-subtle sm:text-[1.05rem]">
+      {description}
+    </p>
+    {
+      highlights.length > 0 && (
+        <ul class="flex flex-wrap gap-3 text-sm text-subtle">
+          {
+            highlights.map((highlight) => (
+              <li class="rounded-full border border-[#E6E6EA] px-4 py-1 font-medium text-text/80">
+                {highlight}
+              </li>
+            ))
+          }
+        </ul>
+      )
+    }
+    {
+      ctas.length > 0 && (
+        <div class="flex flex-wrap gap-3 pt-2">
+          {
+            ctas.map((cta) => (
+              <a
+                href={cta.href}
+                target={cta.external ? '_blank' : undefined}
+                rel={cta.external ? 'noreferrer noopener' : undefined}
+                class="inline-flex items-center gap-2 rounded-full border border-transparent bg-text px-5 py-2 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-black"
+              >
+                {cta.label}
+                <span aria-hidden="true">↗</span>
+              </a>
+            ))
+          }
+        </div>
+      )
+    }
+  </div>
+</section>

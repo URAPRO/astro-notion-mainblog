@@ -1,0 +1,69 @@
+---
+export interface ActivityItem {
+  title: string
+  date: string
+  href?: string
+  category?: string
+}
+
+const { title = 'Activity Stream', description = '更新ログ', items = [] } = Astro.props
+
+const formatDate = (value: string) => {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleDateString('ja-JP', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
+}
+---
+
+<section class="rounded-[28px] border border-[#ECECF0] bg-white p-6 shadow-floating">
+  <header class="mb-5 flex items-baseline justify-between gap-4">
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-[0.3em] text-accent">
+        {description}
+      </p>
+      <h2 class="mt-2 text-2xl font-semibold text-text">
+        {title}
+      </h2>
+    </div>
+    <span class="text-xs text-subtle">最近の更新</span>
+  </header>
+  <ol class="space-y-3">
+    {
+      items.map((item) => (
+        <li class="flex items-start gap-3 rounded-2xl border border-transparent px-3 py-2 transition hover:border-black/5 hover:bg-[#FDFDFE]">
+          <div class="mt-1 h-2 w-2 rounded-full bg-accent"></div>
+          <div class="flex w-full items-center justify-between gap-3">
+            <div>
+              {
+                item.category && (
+                  <span class="text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-subtle">
+                    {item.category}
+                  </span>
+                )
+              }
+              {
+                item.href ? (
+                  <a href={item.href} class="mt-1 block text-base font-semibold text-text hover:underline">
+                    {item.title}
+                  </a>
+                ) : (
+                  <p class="mt-1 text-base font-semibold text-text">
+                    {item.title}
+                  </p>
+                )
+              }
+            </div>
+            <time class="text-xs text-subtle" datetime={item.date}>
+              {formatDate(item.date)}
+            </time>
+          </div>
+        </li>
+      ))
+    }
+  </ol>
+</section>

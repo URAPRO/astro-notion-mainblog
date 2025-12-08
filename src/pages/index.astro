@@ -1,108 +1,195 @@
 ---
-import {
-  getAllBlogPosts,
-  getPosts,
-  getRankedPosts,
-  getAllTags,
-} from '../lib/notion/client.ts'
+import BentoLayout from '../components/bento/BentoLayout.astro'
+import Hero from '../components/bento/Hero.astro'
+import BentoGrid from '../components/bento/BentoGrid.astro'
+import BentoCard from '../components/bento/BentoCard.astro'
+import ActivityStream from '../components/bento/ActivityStream.astro'
+import Footer from '../components/bento/Footer.astro'
+import { getPosts, getPostsByCategory } from '../lib/notion/client.ts'
 import { getPostLink } from '../lib/blog-helpers.ts'
-import Layout from '../layouts/Layout.astro'
-import NoContents from '../components/NoContents.astro'
-import PostDate from '../components/PostDate.astro'
-import PostUpdateDate from '../components/PostUpdateDate.astro'
-import PostTags from '../components/PostTags.astro'
-import PostTitle from '../components/PostTitle.astro'
-import PostFeaturedImage from '../components/PostFeaturedImage.astro'
-import BlogPostsLink from '../components/BlogPostsLink.astro'
-import BlogTagsLink from '../components/BlogTagsLink.astro'
-import styles from '../styles/blog.module.css'
 
-const [allPosts, recentPosts, rankedPosts, tags] = await Promise.all([
-  getAllBlogPosts(),
-  getPosts(5),
-  getRankedPosts(),
-  getAllTags(),
+const [
+  recentPosts,
+  projectPosts,
+  notesPosts,
+  toolsPosts,
+  experimentsPosts,
+  mediaPosts,
+] = await Promise.all([
+  getPosts(6),
+  getPostsByCategory('Projects', 3),
+  getPostsByCategory('Notes', 3),
+  getPostsByCategory('Tools', 3),
+  getPostsByCategory('Experiments', 2),
+  getPostsByCategory('Media', 3),
 ])
 
-const internalPosts = allPosts.filter((post) => !post.ExternalLink).slice(0, 4)
-const notePosts = allPosts.filter((post) => post.ExternalLink && post.ExternalLink.includes('note.com')).slice(0, 4)
+const formatDate = (value: string) => {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+  return date.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })
+}
+
+const toCardItems = (posts) =>
+  posts.map((post) => ({
+    title: post.Title,
+    href: post.ExternalLink || getPostLink(post),
+    meta: `${formatDate(post.Date)} ・ ${post.Tags[0]?.name || 'Update'}`,
+    accent: post.Category?.name || 'Blog',
+  }))
+
+const fallbackContent = {
+  Projects: [
+    {
+      title: 'Hyperdraft Studio',
+      meta: 'AIを活用した情報アーカイブ実験',
+      accent: 'Projects',
+    },
+    {
+      title: 'Open Garden UI',
+      meta: 'Minimal UI kit / 2025',
+      accent: 'Design',
+    },
+    {
+      title: 'Async Tokyo',
+      meta: 'イベント運営の裏側メモ',
+      accent: 'Community',
+    },
+  ],
+  Notes: [
+    {
+      title: 'Reading: Living Archives',
+      meta: 'アーカイブ思想の読み書きメモ',
+      accent: 'Notes',
+    },
+    {
+      title: 'Tiny habits for deep work',
+      meta: '日次で検証している習慣ログ',
+      accent: 'Practice',
+    },
+  ],
+  Tools: [
+    {
+      title: 'Bento UI tokens',
+      meta: 'Tailwindプリセット + デザイントークン',
+      accent: 'Tools',
+    },
+    {
+      title: 'Prompt workbench',
+      meta: 'LLM検証用のPlayground',
+      accent: 'Tools',
+    },
+  ],
+  Experiments: [
+    {
+      title: 'Multimodal notebook',
+      meta: '画像 + テキストのノート実験',
+      accent: 'Experiments',
+    },
+    {
+      title: 'Canvas playback',
+      meta: 'プロトタイピング: Motion × Canvas',
+      accent: 'R&D',
+    },
+  ],
+  Media: [
+    {
+      title: 'Design Scraps Vol.03',
+      meta: '短編エッセイ / Newsletter',
+      accent: 'Media',
+    },
+    {
+      title: 'Podcast: Async Builders #12',
+      meta: '音声で語る実験ログ',
+      accent: 'Podcast',
+    },
+  ],
+}
+
+const cardData = {
+  blog: toCardItems(recentPosts.slice(0, 3)),
+  projects: toCardItems(projectPosts),
+  notes: toCardItems(notesPosts),
+  tools: toCardItems(toolsPosts),
+  experiments: toCardItems(experimentsPosts),
+  media: toCardItems(mediaPosts),
+}
+
+const ensureContent = (key: keyof typeof fallbackContent, dynamicItems) =>
+  dynamicItems.length > 0 ? dynamicItems : fallbackContent[key]
+
+const activityItems = recentPosts.slice(0, 6).map((post) => ({
+  title: post.Title,
+  date: post.UpdateDate || post.Date,
+  href: post.ExternalLink || getPostLink(post),
+  category: post.Category?.name || 'Blog',
+}))
 ---
 
-<Layout 
-  title="Home" 
+<BentoLayout
+  title="urapro.dev"
+  description="MinimalなLiving Archiveとして、開発ログ・ノート・プロジェクトを集約しました。"
   path="/"
-  description="urapro.dev – プログラマーUraによるWeb開発技術、プログラミングTIPS、読書記録を発信するブログ。実践的な情報であなたのスキルアップを応援します。"
-  ogImage=""
 >
-  <div slot="main" class={`${styles.main} ${styles.postsPage}`}>  
-    {/* 内部記事セクション */}
-    <section>
-      <h2>最新記事</h2>
-      {
-        internalPosts.length === 0 ? (
-          <NoContents contents={internalPosts} />
-        ) : (
-          internalPosts.map((post) => (
-            <div class={styles.post} data-post-slug={post.Slug}>
-              <div class={styles.postDetail}>
-                <div class={styles.postDetailLeft}>
-                  <PostFeaturedImage post={post} enableLink={false} />
-                </div>
-                <div class={styles.postDetailRight}>
-                  <PostTitle post={post} enableLink={true} />
-                  <div class={styles.postDate}>
-                    <PostDate post={post} />
-                    <PostUpdateDate post={post} />
-                  </div>
-                  <PostTags post={post} enableLink={true} />
-                </div>
-                <a class={styles.postLink} href={getPostLink(post)}></a>
-              </div>
-            </div>
-          ))
-        )
-      }
-      <div class={styles.seeMoreWrapper}>
-        <a href="/posts" class={styles.seeMoreButton}>もっと見る</a>
-      </div>
-    </section>
+  <Hero
+    title="Living Archive for Experiments & Craft"
+    subtitle="プロトタイプ、記事、ノートをすべて一枚に。"
+    description="urapro.dev は、日々の開発ログとリサーチを同じキャンバスに集約する実験的なアーカイブです。コード、文章、メモの境界をなくし、継続的にアップデートされる“生きた”記録を目指します。"
+    highlights={['フルスタック開発', 'Design Systems', 'Tokyo / Remote']}
+    ctas={[
+      { label: '最新記事を見る', href: '/posts' },
+      { label: 'Notionデータベース', href: 'https://www.notion.so', external: true },
+    ]}
+  />
 
-    {/* note 記事セクション */}
-    <section>
-      <h2>note の記事</h2>
-      {
-        notePosts.length === 0 ? (
-          <NoContents contents={notePosts} />
-        ) : (
-          notePosts.map((post) => (
-            <div class={styles.post} data-post-slug={post.Slug}>
-              <div class={styles.postDetail}>
-                <div class={styles.postDetailLeft}>
-                  <PostFeaturedImage post={post} enableLink={false} />
-                </div>
-                <div class={styles.postDetailRight}>
-                  <PostTitle post={post} enableLink={true} />
-                  <div class={styles.postDate}>
-                    <PostDate post={post} />
-                    <PostUpdateDate post={post} />
-                  </div>
-                  <PostTags post={post} enableLink={true} />
-                </div>
-                <a class={styles.postLink} href={getPostLink(post)} target="_blank"></a>
-              </div>
-            </div>
-          ))
-        )
-      }
-      <div class={styles.seeMoreWrapper}>
-        <a href="/note" class={styles.seeMoreButton}>もっと見る</a>
-      </div>
-    </section>
-  </div>
+  <BentoGrid>
+    <BentoCard
+      label="Projects"
+      title="継続的に育てているプロジェクト"
+      description="Web体験を中心に、学習し続けるプロダクトを目指して試作と改修を繰り返しています。"
+      items={ensureContent('Projects', cardData.projects)}
+      accentText="直近はエディタとアーカイブ体験に集中。"
+      highlight={true}
+    />
+    <BentoCard
+      label="Blog"
+      title="最新の公開記事"
+      description="技術的な振り返りやプロセスノートから厳選。"
+      items={cardData.blog}
+      href="/posts"
+      footerNote="すべての記事はNotionから自動連携。"
+    />
+    <BentoCard
+      label="Notes"
+      title="短いメモと観察ログ"
+      description="設計プロセス・読書ノート・ライフログを低解像度のまま共有。"
+      items={ensureContent('Notes', cardData.notes)}
+      href="/note"
+    />
+    <BentoCard
+      label="Tools"
+      title="制作に使っているツール"
+      description="公開できるテンプレートやシェーダ、LLMプロンプトなどの小さな道具たち。"
+      items={ensureContent('Tools', cardData.tools)}
+      accentText="TailwindプリセットやNotionテンプレートを順次公開中。"
+    />
+    <BentoCard
+      label="Experiments"
+      title="実験と検証ログ"
+      description="UIモーション、生成AI、インタラクションの試行錯誤を短いループで共有。"
+      items={ensureContent('Experiments', cardData.experiments)}
+    />
+    <BentoCard
+      label="Media"
+      title="外部配信 / メディア"
+      description="ポッドキャストやニュースレター、コラボレーション企画のアーカイブ。"
+      items={ensureContent('Media', cardData.media)}
+    />
+  </BentoGrid>
 
-  <div slot="aside" class={styles.aside}>
-    <BlogPostsLink heading="最新記事" posts={recentPosts} />
-    <BlogPostsLink heading="おすすめ記事" posts={rankedPosts} />
-    <BlogTagsLink heading="カテゴリー" tags={tags} />
-  </div>
-</Layout>
+  <ActivityStream items={activityItems} />
+
+  <Footer />
+</BentoLayout>

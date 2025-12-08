@@ -1,0 +1,58 @@
+---
+import { PUBLIC_GA_TRACKING_ID } from '../../server-constants'
+import { getDatabase } from '../../lib/notion/client'
+import { getNavLink, getStaticFilePath } from '../../lib/blog-helpers'
+import GoogleAnalytics from '../GoogleAnalytics.astro'
+import '../../styles/global.css'
+
+export interface Props {
+  title?: string
+  description?: string
+  path?: string
+  ogImage?: string
+  metaDescription?: string
+}
+
+const {
+  title = '',
+  description = '',
+  path = '/',
+  ogImage = '',
+  metaDescription,
+} = Astro.props
+
+const database = await getDatabase()
+const siteTitle = title ? `${title} – ${database.Title}` : database.Title
+const effectiveDescription = metaDescription || description || database.Description
+const siteURL = new URL(getNavLink(path), Astro.site).toString()
+const siteOGImage = new URL(getStaticFilePath('/default-og-image.png'), Astro.site)
+---
+
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{siteTitle}</title>
+    <meta name="description" content={effectiveDescription} />
+    <link rel="canonical" href={siteURL} />
+    <meta property="og:url" content={siteURL} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={siteTitle} />
+    <meta property="og:description" content={effectiveDescription} />
+    <meta property="og:site_name" content={database.Title} />
+    <meta property="og:image" content={ogImage || siteOGImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={siteTitle} />
+    <meta name="twitter:description" content={effectiveDescription} />
+    <meta name="twitter:image" content={ogImage || siteOGImage} />
+    <slot name="head" />
+  </head>
+  <body class="bg-background text-text">
+    <GoogleAnalytics trackingId={PUBLIC_GA_TRACKING_ID} />
+    <main class="mx-auto flex min-h-screen w-full max-w-bento flex-col gap-12 px-6 py-12 sm:px-8 md:px-10 lg:px-0">
+      <slot />
+    </main>
+  </body>
+</html>

@@ -1,0 +1,20 @@
+---
+export interface Props {
+  minWidth?: string
+  gap?: string
+  class?: string
+}
+
+const {
+  minWidth = '220px',
+  gap = 'gap-4 md:gap-5',
+  class: extraClass = '',
+} = Astro.props
+---
+
+<div
+  class={`grid ${gap} ${extraClass}`.trim()}
+  style={`grid-template-columns: repeat(auto-fit, minmax(${minWidth}, 1fr));`}
+>
+  <slot />
+</div>

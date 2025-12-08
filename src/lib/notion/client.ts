@@ -62,6 +62,12 @@ const client = new Client({
 
 let postsCache: Post[] | null = null
 let dbCache: Database | null = null
+const DEFAULT_CATEGORY_NAME = 'Blog'
+const FALLBACK_CATEGORY: SelectProperty = {
+  id: 'default-category',
+  name: DEFAULT_CATEGORY_NAME,
+  color: 'default',
+}
 
 const numberOfRetry = 2
 
@@ -184,6 +190,24 @@ export async function getAllBlogPosts(): Promise<Post[]> {
 export async function getPosts(pageSize = 10): Promise<Post[]> {
   const allPosts = await getAllBlogPosts()
   return allPosts.slice(0, pageSize)
+}
+
+export async function getPostsByCategory(
+  categoryName: string,
+  pageSize?: number
+): Promise<Post[]> {
+  const normalized = categoryName?.trim()
+  if (!normalized) {
+    return []
+  }
+
+  const allPosts = await getAllBlogPosts()
+  const filtered = allPosts.filter((post) => {
+    const name = post.Category?.name || DEFAULT_CATEGORY_NAME
+    return name === normalized
+  })
+
+  return typeof pageSize === 'number' ? filtered.slice(0, pageSize) : filtered
 }
 
 export async function getRankedPosts(pageSize = 10): Promise<Post[]> {
@@ -1129,6 +1153,8 @@ async function _buildPost(pageObject: responses.PageObject): Promise<Post> {
     }
   }
 
+  const category = prop.Category?.select || FALLBACK_CATEGORY;
+
   return {
     PageId: pageObject.id,
     Title: prop.Page?.title?.[0]?.plain_text || '',
@@ -1138,6 +1164,7 @@ async function _buildPost(pageObject: responses.PageObject): Promise<Post> {
     Date: prop.Date?.date?.start || '',
     UpdateDate: prop.UpdateDate?.last_edited_time || prop.Date?.date?.start || '',
     Tags: prop.Tags?.multi_select || [],
+    Category: category,
     Excerpt:
       prop.Excerpt?.rich_text?.[0]?.plain_text ||
       prop.Page?.title?.[0]?.plain_text ||

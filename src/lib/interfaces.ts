@@ -14,6 +14,7 @@ export interface Post {
   Date: string
   UpdateDate: string
   Tags: SelectProperty[]
+  Category?: SelectProperty | null
   Excerpt: string
   FeaturedImage: FileObject | null
   Rank: number

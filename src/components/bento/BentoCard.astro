@@ -1,0 +1,132 @@
+---
+export interface CardItem {
+  title: string
+  meta?: string
+  href?: string
+  accent?: string
+}
+
+export interface Props {
+  label?: string
+  title: string
+  description?: string
+  href?: string
+  items?: CardItem[]
+  accentText?: string
+  highlight?: boolean
+  footerNote?: string
+}
+
+const {
+  label,
+  title,
+  description,
+  href,
+  items = [],
+  accentText = '',
+  highlight = false,
+  footerNote,
+} = Astro.props
+---
+
+<article
+  class={`surface-card relative flex h-full flex-col justify-between rounded-[26px] border border-[#ECECF0] p-6 transition duration-300 hover:-translate-y-1 hover:shadow-floating ${highlight ? 'bg-text text-white' : 'bg-white'}`}
+>
+  <div class="space-y-4">
+    {
+      label && (
+        <p class={`text-xs font-semibold uppercase tracking-[0.3em] ${highlight ? 'text-white/70' : 'text-accent'}`}>
+          {label}
+        </p>
+      )
+    }
+    <div class="space-y-3">
+      <h3 class={`text-2xl font-semibold leading-tight ${highlight ? 'text-white' : 'text-text'}`}>
+        {title}
+      </h3>
+      {
+        description && (
+          <p class={`text-sm leading-relaxed ${highlight ? 'text-white/80' : 'text-subtle'}`}>
+            {description}
+          </p>
+        )
+      }
+    </div>
+    {
+      accentText && (
+        <p class={`text-sm font-medium ${highlight ? 'text-white/80' : 'text-text/80'}`}>
+          {accentText}
+        </p>
+      )
+    }
+    {
+      items.length > 0 && (
+        <ul class="space-y-3 pt-2">
+          {
+            items.map((item) => (
+              <li class="group flex items-center justify-between gap-4 rounded-2xl border border-transparent bg-white/60 px-4 py-3 transition hover:border-black/10 hover:bg-white/90 aria-[current=true]:border-black/10 aria-[current=true]:bg-white/90">
+                <div class="space-y-1">
+                  {
+                    item.accent && (
+                      <span class={`text-xs font-semibold uppercase tracking-[0.2em] ${highlight ? 'text-white/60' : 'text-subtle'}`}>
+                        {item.accent}
+                      </span>
+                    )
+                  }
+                  {
+                    item.href ? (
+                      <a
+                        href={item.href}
+                        class={`text-base font-semibold transition group-hover:underline ${highlight ? 'text-white' : 'text-text'}`}
+                      >
+                        {item.title}
+                      </a>
+                    ) : (
+                      <p class={`text-base font-semibold ${highlight ? 'text-white' : 'text-text'}`}>
+                        {item.title}
+                      </p>
+                    )
+                  }
+                  {
+                    item.meta && (
+                      <p class={`text-xs ${highlight ? 'text-white/70' : 'text-subtle'}`}>
+                        {item.meta}
+                      </p>
+                    )
+                  }
+                </div>
+                {
+                  item.href && (
+                    <span class={`text-lg transition ${highlight ? 'text-white/80' : 'text-text/60'} group-hover:translate-x-1`}>
+                      ↗
+                    </span>
+                  )
+                }
+              </li>
+            ))
+          }
+        </ul>
+      )
+    }
+  </div>
+
+  {
+    href && (
+      <a
+        href={href}
+        class={`mt-6 inline-flex items-center gap-2 text-sm font-semibold transition ${highlight ? 'text-white' : 'text-text/80'} hover:gap-3`}
+      >
+        Explore
+        <span aria-hidden="true">↗</span>
+      </a>
+    )
+  }
+
+  {
+    footerNote && (
+      <p class={`mt-4 text-xs ${highlight ? 'text-white/60' : 'text-subtle'}`}>
+        {footerNote}
+      </p>
+    )
+  }
+</article>

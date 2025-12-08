@@ -6,6 +6,7 @@ import CustomIconDownloader from './src/integrations/custom-icon-downloader';
 import FeaturedImageDownloader from './src/integrations/featured-image-downloader';
 import PublicNotionCopier from './src/integrations/public-notion-copier';
 import react from "@astrojs/react";
+import tailwindcss from '@tailwindcss/vite';
 const getSite = function () {
   if (CUSTOM_DOMAIN) {
     return new URL(BASE_PATH, `https://${CUSTOM_DOMAIN}`).toString();
@@ -27,6 +28,7 @@ const getSite = function () {
 export default defineConfig({
   site: getSite(),
   base: BASE_PATH,
+
   integrations: [
     icon(),
     CoverImageDownloader(),
@@ -35,4 +37,8 @@ export default defineConfig({
     PublicNotionCopier(),
     react(),
   ],
+
+  vite: {
+    plugins: [tailwindcss()]
+  }
 });

@@ -1,0 +1,11 @@
+---
+const year = new Date().getFullYear()
+const { label = 'Built for the Living Archive' } = Astro.props
+---
+
+<footer class="border-t border-[#EDEDF1] pt-6 text-sm text-subtle">
+  <p>{label}</p>
+  <p class="mt-1 text-xs">
+    &copy; {year} urapro.dev — powered by astro-notion-blog
+  </p>
+</footer>
