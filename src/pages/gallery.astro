@@ -1,0 +1,255 @@
+---
+import Layout from '../layouts/Layout.astro'
+import { getAllBlogPosts } from '../lib/notion/client.ts'
+import { getPostLink, filePath } from '../lib/blog-helpers.ts'
+import type { Post } from '../lib/interfaces.ts'
+
+const allPosts = await getAllBlogPosts()
+
+const hasGalleryTag = (post: Post) => {
+  const normalize = (value?: string) => value?.toLowerCase().trim()
+  const tags = post.Tags || []
+  const internalTags = post.InternalTags || []
+  return (
+    tags.some((tag) => normalize(tag.name) === 'gallery') ||
+    internalTags.some((tag) => normalize(tag.name) === 'gallery')
+  )
+}
+
+const toImageUrl = (post: Post) => {
+  if (!post.FeaturedImage?.Url) return ''
+
+  if (import.meta.env.DEV) {
+    return post.FeaturedImage.Url
+  }
+
+  try {
+    return filePath(new URL(post.FeaturedImage.Url))
+  } catch {
+    return post.FeaturedImage.Url
+  }
+}
+
+const formatDate = (value: string) => {
+  if (!value) return ''
+  try {
+    return new Date(value).toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    })
+  } catch {
+    return value
+  }
+}
+
+const galleryCards = allPosts
+  .filter((post) => post.Published && hasGalleryTag(post) && !post.ExternalLink)
+  .map((post) => ({
+    post,
+    imageUrl: toImageUrl(post),
+    link: getPostLink(post),
+    dateLabel: formatDate(post.Date),
+  }))
+  .sort((a, b) => (a.post.Date < b.post.Date ? 1 : -1))
+---
+
+<Layout
+  title="Gallery"
+  path="/gallery"
+  description="レーザーカッター作品や写真をまとめたギャラリーページ"
+  ogImage=""
+>
+  <div slot="main" class="gallery-page">
+    <section class="gallery-intro">
+      <p class="eyebrow">Gallery</p>
+      <h2>レーザーカッターとWebのあいだで生まれる景色。</h2>
+      <p>
+        Notion に「Gallery」タグを付けた記事だけを集めたビジュアルアーカイブです。<br />
+        プロトタイプ、展示記録、素材づくりのプロセスなど、写真やイラスト中心で紹介しています。
+      </p>
+    </section>
+
+    {
+      galleryCards.length === 0 ? (
+        <p class="empty-state">Gallery タグ付きの投稿がまだありません。少し待っていてください 🛠️</p>
+      ) : (
+        <div class="gallery-grid">
+          {galleryCards.map(({ post, imageUrl, link, dateLabel }) => (
+            <a class="gallery-card" href={link}>
+              <div class={`gallery-thumb ${imageUrl ? '' : 'empty'}`}>
+                {
+                  imageUrl ? (
+                    <img src={imageUrl} alt={`${post.Title} のサムネイル`} loading="lazy" decoding="async" />
+                  ) : (
+                    <span class="thumb-placeholder">No image</span>
+                  )
+                }
+              </div>
+              <div class="gallery-info">
+                <div class="gallery-meta">
+                  <time dateTime={post.Date}>{dateLabel}</time>
+                  <span>#{post.Slug}</span>
+                </div>
+                <h3>{post.Title}</h3>
+                <p class="gallery-excerpt">{post.Excerpt || '作品メモを近日公開予定。'}</p>
+                <div class="gallery-tags" aria-label="タグ">
+                  {(post.Tags || []).slice(0, 3).map((tag) => (
+                    <span>{tag.name}</span>
+                  ))}
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+      )
+    }
+  </div>
+</Layout>
+
+<style>
+  .gallery-page {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+  }
+
+  .gallery-intro {
+    border-radius: calc(var(--radius) * 2);
+    padding: 2.2rem;
+    background: linear-gradient(135deg, rgba(99, 179, 237, 0.18), rgba(237, 100, 166, 0.12));
+    border: 1px solid rgba(99, 179, 237, 0.3);
+  }
+
+  .eyebrow {
+    font-size: 0.9rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #718096;
+    margin: 0;
+  }
+
+  .gallery-intro h2 {
+    margin: 0.5rem 0 1rem;
+    font-size: 2rem;
+  }
+
+  .gallery-intro p {
+    margin: 0;
+    color: rgba(45, 55, 72, 0.85);
+    line-height: 1.8;
+  }
+
+  .empty-state {
+    margin: 0;
+    padding: 1.5rem;
+    border-radius: calc(var(--radius) * 2);
+    background: #fff5f7;
+    border: 1px solid rgba(237, 100, 166, 0.3);
+    color: #b83280;
+    text-align: center;
+  }
+
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .gallery-card {
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    border-radius: calc(var(--radius) * 2);
+    overflow: hidden;
+    background: #ffffff;
+    border: 1px solid rgba(45, 55, 72, 0.1);
+    box-shadow: 0 15px 35px rgba(45, 55, 72, 0.12);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    color: inherit;
+  }
+
+  .gallery-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 25px 45px rgba(45, 55, 72, 0.2);
+  }
+
+  .gallery-thumb {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    background: rgba(237, 100, 166, 0.08);
+    overflow: hidden;
+  }
+
+  .gallery-thumb img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .gallery-thumb.empty {
+    background: repeating-linear-gradient(135deg, rgba(237, 100, 166, 0.08) 0, rgba(237, 100, 166, 0.08) 10px, rgba(99, 179, 237, 0.08) 10px, rgba(99, 179, 237, 0.08) 20px);
+    color: #718096;
+    font-weight: 600;
+  }
+
+  .thumb-placeholder {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .gallery-info {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .gallery-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: #718096;
+  }
+
+  .gallery-info h3 {
+    margin: 0;
+    font-size: 1.3rem;
+    color: var(--fg);
+  }
+
+  .gallery-excerpt {
+    margin: 0;
+    color: rgba(45, 55, 72, 0.8);
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .gallery-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .gallery-tags span {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: var(--radius);
+    background: rgba(99, 179, 237, 0.15);
+    color: #2b6cb0;
+  }
+
+  @media (max-width: 640px) {
+    .gallery-intro {
+      padding: 1.7rem;
+    }
+
+    .gallery-intro h2 {
+      font-size: 1.6rem;
+    }
+  }
+</style>

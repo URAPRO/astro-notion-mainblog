@@ -1,108 +1,235 @@
 ---
-import {
-  getAllBlogPosts,
-  getPosts,
-  getRankedPosts,
-  getAllTags,
-} from '../lib/notion/client.ts'
-import { getPostLink } from '../lib/blog-helpers.ts'
 import Layout from '../layouts/Layout.astro'
-import NoContents from '../components/NoContents.astro'
-import PostDate from '../components/PostDate.astro'
-import PostUpdateDate from '../components/PostUpdateDate.astro'
-import PostTags from '../components/PostTags.astro'
-import PostTitle from '../components/PostTitle.astro'
-import PostFeaturedImage from '../components/PostFeaturedImage.astro'
-import BlogPostsLink from '../components/BlogPostsLink.astro'
-import BlogTagsLink from '../components/BlogTagsLink.astro'
-import styles from '../styles/blog.module.css'
 
-const [allPosts, recentPosts, rankedPosts, tags] = await Promise.all([
-  getAllBlogPosts(),
-  getPosts(5),
-  getRankedPosts(),
-  getAllTags(),
-])
+interface HubSection {
+  title: string
+  description: string
+  href: string
+  emoji: string
+  badge: string
+  tone: 'profile' | 'blog' | 'external' | 'gallery'
+}
 
-const internalPosts = allPosts.filter((post) => !post.ExternalLink).slice(0, 4)
-const notePosts = allPosts.filter((post) => post.ExternalLink && post.ExternalLink.includes('note.com')).slice(0, 4)
+const hubSections: HubSection[] = [
+  {
+    title: 'Profile',
+    description: '自己紹介、活動歴、これから挑戦したいことをぎゅっとまとめました。',
+    href: '/profile',
+    emoji: '🪄',
+    badge: 'About me',
+    tone: 'profile',
+  },
+  {
+    title: 'Blog',
+    description: 'Web開発・ものづくりの実験記録。設計メモや実装TIPSはこちら。',
+    href: '/posts',
+    emoji: '🛠️',
+    badge: 'Articles',
+    tone: 'blog',
+  },
+  {
+    title: 'External',
+    description: 'note など外部プラットフォームに書いた記事まとめ。長編コラムやエッセイはこちら。',
+    href: '/note',
+    emoji: '📬',
+    badge: 'note & more',
+    tone: 'external',
+  },
+  {
+    title: 'Gallery',
+    description: 'レーザーカッター作品や写真、試作アーカイブ。ビジュアル中心の記録です。',
+    href: '/gallery',
+    emoji: '🎆',
+    badge: 'Visual log',
+    tone: 'gallery',
+  },
+]
 ---
 
 <Layout 
   title="Home" 
   path="/"
-  description="urapro.dev – プログラマーUraによるWeb開発技術、プログラミングTIPS、読書記録を発信するブログ。実践的な情報であなたのスキルアップを応援します。"
+  description="urapro.dev – プログラマーUraによるWeb開発とものづくりのハブ。"
   ogImage=""
 >
-  <div slot="main" class={`${styles.main} ${styles.postsPage}`}>  
-    {/* 内部記事セクション */}
-    <section>
-      <h2>最新記事</h2>
-      {
-        internalPosts.length === 0 ? (
-          <NoContents contents={internalPosts} />
-        ) : (
-          internalPosts.map((post) => (
-            <div class={styles.post} data-post-slug={post.Slug}>
-              <div class={styles.postDetail}>
-                <div class={styles.postDetailLeft}>
-                  <PostFeaturedImage post={post} enableLink={false} />
-                </div>
-                <div class={styles.postDetailRight}>
-                  <PostTitle post={post} enableLink={true} />
-                  <div class={styles.postDate}>
-                    <PostDate post={post} />
-                    <PostUpdateDate post={post} />
-                  </div>
-                  <PostTags post={post} enableLink={true} />
-                </div>
-                <a class={styles.postLink} href={getPostLink(post)}></a>
-              </div>
-            </div>
-          ))
-        )
-      }
-      <div class={styles.seeMoreWrapper}>
-        <a href="/posts" class={styles.seeMoreButton}>もっと見る</a>
+  <div slot="main" class="hub">
+    <section class="hero">
+      <p class="eyebrow">Maker & Engineer Hub</p>
+
+      <h2>つくる・書く・届けるをつなぐホームベース。</h2>
+
+      <p class="lead">
+        Web開発の実験記録からフィジカル制作物、長文コラムまで。<br />
+        今の自分をまるっと伝える4つの入り口を用意しました。
+      </p>
+
+      <div class="hero-tags" aria-label="活動領域">
+        <span>#LaserCutting</span>
+        <span>#WebDev</span>
+        <span>#Notion</span>
+        <span>#DailyMaking</span>
       </div>
     </section>
 
-    {/* note 記事セクション */}
-    <section>
-      <h2>note の記事</h2>
-      {
-        notePosts.length === 0 ? (
-          <NoContents contents={notePosts} />
-        ) : (
-          notePosts.map((post) => (
-            <div class={styles.post} data-post-slug={post.Slug}>
-              <div class={styles.postDetail}>
-                <div class={styles.postDetailLeft}>
-                  <PostFeaturedImage post={post} enableLink={false} />
-                </div>
-                <div class={styles.postDetailRight}>
-                  <PostTitle post={post} enableLink={true} />
-                  <div class={styles.postDate}>
-                    <PostDate post={post} />
-                    <PostUpdateDate post={post} />
-                  </div>
-                  <PostTags post={post} enableLink={true} />
-                </div>
-                <a class={styles.postLink} href={getPostLink(post)} target="_blank"></a>
-              </div>
-            </div>
-          ))
-        )
-      }
-      <div class={styles.seeMoreWrapper}>
-        <a href="/note" class={styles.seeMoreButton}>もっと見る</a>
-      </div>
+    <section class="hub-grid" aria-label="主要ページへのナビゲーション">
+      {hubSections.map((section) => (
+        <a class={`hub-card ${section.tone}`} href={section.href}>
+          <div class="card-meta">
+            <span class="card-badge">{section.badge}</span>
+            <span class="card-emoji" aria-hidden="true">{section.emoji}</span>
+          </div>
+          <div class="card-body">
+            <h3>{section.title}</h3>
+            <p>{section.description}</p>
+          </div>
+          <span class="card-link">くわしく見る →</span>
+        </a>
+      ))}
     </section>
-  </div>
-
-  <div slot="aside" class={styles.aside}>
-    <BlogPostsLink heading="最新記事" posts={recentPosts} />
-    <BlogPostsLink heading="おすすめ記事" posts={rankedPosts} />
-    <BlogTagsLink heading="カテゴリー" tags={tags} />
   </div>
 </Layout>
+
+<style>
+  .hub {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+  }
+
+  .hero {
+    background: linear-gradient(135deg, rgba(237, 100, 166, 0.15), rgba(99, 179, 237, 0.15));
+    border-radius: calc(var(--radius) * 2);
+    padding: 2.5rem;
+    border: 1px solid rgba(99, 179, 237, 0.3);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+
+  .eyebrow {
+    font-size: 0.95rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #718096;
+    margin: 0 0 0.8rem;
+  }
+
+  .hero h2 {
+    margin: 0 0 1rem;
+    font-size: 2.2rem;
+    line-height: 1.3;
+    color: var(--fg);
+  }
+
+  .lead {
+    margin: 0;
+    color: rgba(45, 55, 72, 0.9);
+    font-size: 1.05rem;
+  }
+
+  .hero-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 1.5rem;
+  }
+
+  .hero-tags span {
+    padding: 0.4rem 0.9rem;
+    border-radius: var(--radius);
+    background: rgba(255, 255, 255, 0.7);
+    color: #4a5568;
+    font-size: 0.9rem;
+    border: 1px solid rgba(74, 85, 104, 0.2);
+  }
+
+  .hub-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .hub-card {
+    position: relative;
+    border-radius: calc(var(--radius) * 2);
+    padding: 1.8rem;
+    background: white;
+    border: 2px solid transparent;
+    text-decoration: none;
+    color: inherit;
+    box-shadow: 0 15px 30px rgba(45, 55, 72, 0.08);
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  }
+
+  .hub-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 45px rgba(45, 55, 72, 0.16);
+  }
+
+  .card-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.2rem;
+  }
+
+  .card-badge {
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #4a5568;
+  }
+
+  .card-emoji {
+    font-size: 1.8rem;
+  }
+
+  .card-body h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1.4rem;
+    color: var(--fg);
+  }
+
+  .card-body p {
+    margin: 0;
+    color: rgba(45, 55, 72, 0.85);
+  }
+
+  .card-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: 1.5rem;
+    font-weight: 600;
+    color: var(--accents-1);
+  }
+
+  .hub-card.profile {
+    border-color: rgba(237, 100, 166, 0.4);
+  }
+
+  .hub-card.blog {
+    border-color: rgba(246, 173, 85, 0.5);
+  }
+
+  .hub-card.external {
+    border-color: rgba(99, 179, 237, 0.5);
+  }
+
+  .hub-card.gallery {
+    border-color: rgba(129, 230, 217, 0.4);
+  }
+
+  @media (max-width: 640px) {
+    .hero {
+      padding: 2rem;
+    }
+
+    .hero h2 {
+      font-size: 1.8rem;
+    }
+
+    .hub-card {
+      padding: 1.5rem;
+    }
+  }
+</style>

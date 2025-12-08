@@ -69,11 +69,11 @@ const posts = internalAllPosts.slice(0, NUMBER_OF_POSTS_PER_PAGE)
     <footer>
       <Pagination currentPage={1} numberOfPages={numberOfPages} tag="" />
     </footer>
-  </div>
 
-  <div slot="aside" class={styles.aside}>
-    <BlogPostsLink heading="最新記事" posts={recentPosts} />
-    <BlogPostsLink heading="おすすめ記事" posts={rankedPosts} />
-    <BlogTagsLink heading="カテゴリー" tags={tags} />
+    <section class={styles.widgetSection}>
+      <BlogPostsLink heading="最新記事" posts={recentPosts} />
+      <BlogPostsLink heading="おすすめ記事" posts={rankedPosts} />
+      <BlogTagsLink heading="カテゴリー" tags={tags} />
+    </section>
   </div>
 </Layout>

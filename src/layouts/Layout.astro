@@ -105,17 +105,17 @@ if (profilePost?.FeaturedImage?.Url) {
     crossorigin="anonymous"></script>
     <GoogleAnalytics trackingId={PUBLIC_GA_TRACKING_ID} />
     <div class="container">
-      <div>
-        <main>
-          {
-            coverImageURL && (
-              <div class="cover">
-                <img src={coverImageURL} alt={`${database.Title} のカバー画像`} loading="lazy" />
-              </div>
-            )
-          }
-          <div class="content">
-            <header>
+      <main>
+        {
+          coverImageURL && (
+            <div class="cover">
+              <img src={coverImageURL} alt={`${database.Title} のカバー画像`} loading="lazy" />
+            </div>
+          )
+        }
+        <div class="content">
+          <header class="site-header">
+            <div class="site-heading">
               <h1>
                 <a href={getNavLink('/')}>
                   {
@@ -147,27 +147,34 @@ if (profilePost?.FeaturedImage?.Url) {
               <div class="description">
                 {database.Description}
               </div>
-            </header>
+            </div>
+            <div class="header-actions">
+              <SearchButton />
+            </div>
+          </header>
 
-            <slot name="main" />
+          <section class="profile-wrapper">
+            <ProfileSidebar profileIconURL={profileIconURL} />
+          </section>
 
-            <footer>
-              <div>
-                <span>Powered by&nbsp;</span>
-                <a href="https://github.com/otoyo/astro-notion-blog"
-                  >astro-notion-blog</a
-                >
-              </div>
-            </footer>
-          </div>
-        </main>
+          <slot name="main" />
 
-        <aside>
-          <SearchButton />
-          <ProfileSidebar profileIconURL={profileIconURL} />
-          <slot name="aside" />
-        </aside>
-      </div>
+          <footer>
+            <nav class="footer-nav" aria-label="主要ページへのリンク">
+              <a href={getNavLink('/profile')}>Profile</a>
+              <a href={getNavLink('/posts')}>Blog</a>
+              <a href={getNavLink('/note')}>External</a>
+              <a href={getNavLink('/gallery')}>Gallery</a>
+            </nav>
+            <div class="footer-meta">
+              <span>Powered by&nbsp;</span>
+              <a href="https://github.com/otoyo/astro-notion-blog"
+                >astro-notion-blog</a
+              >
+            </div>
+          </footer>
+        </div>
+      </main>
     </div>
 
     <SearchModal />
@@ -181,67 +188,33 @@ if (profilePost?.FeaturedImage?.Url) {
 
 <style>
   .container {
-    margin: 0 auto;
-    max-width: 1280px;
     min-height: 100vh;
     width: 100%;
-  }
-
-  .container > div {
+    padding: 2.5rem 1.5rem 3rem;
+    background: var(--bg);
     display: flex;
-    max-width: 1280px;
-    width: 100%;
-  }
-  @media (max-width: 640px) {
-    .container > div {
-      display: block;
-      width: 100%;
-    }
+    justify-content: center;
   }
 
   main {
-    flex: 1;
-    order: 2;
-    justify-content: space-between;
-    min-width: 0;
-    max-width: 100%;
-  }
-  @media (max-width: 640px) {
-    main {
-      order: 1;
-      width: 100%;
-      max-width: 100%;
-    }
-  }
-
-  aside {
-    order: 1;
-    width: 250px;
-    padding: 35px 20px;
-    background-color: #eee3c9;
-    position: relative;
-    height: auto;
-    flex-shrink: 0;
-  }
-  @media (max-width: 640px) {
-    aside {
-      order: 2;
-      width: 100%;
-    }
+    width: 100%;
+    max-width: 860px;
   }
 
   div.cover {
+    margin-bottom: 1.5rem;
   }
   div.cover img {
     display: block;
     width: 100%;
-    height: 20vh;
+    height: 240px;
     object-fit: cover;
     object-position: center 60%;
+    border-radius: calc(var(--radius) * 2);
   }
 
   div.content {
-    padding: 20px 40px;
+    padding: 2.5rem 2.5rem 2.8rem;
     overflow-wrap: break-word;
     word-wrap: break-word;
     word-break: break-word;
@@ -250,6 +223,9 @@ if (profilePost?.FeaturedImage?.Url) {
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
+    background: #fff;
+    border-radius: calc(var(--radius) * 2);
+    box-shadow: 0 20px 60px rgba(45, 55, 72, 0.12);
   }
   
   div.content > * {
@@ -261,12 +237,9 @@ if (profilePost?.FeaturedImage?.Url) {
     min-width: 0;
   }
   
-  @media (max-width: 640px) {
+  @media (max-width: 900px) {
     div.content {
-      padding-top: 0;
-      padding-bottom: 0;
-      padding-left: 24px;
-      padding-right: 24px;
+      padding: 2rem 1.8rem 2.5rem;
       width: 100%;
       max-width: 100%;
     }
@@ -280,23 +253,33 @@ if (profilePost?.FeaturedImage?.Url) {
   }
   @media (max-width: 410px) {
     div.content {
-      padding-left: 16px;
-      padding-right: 16px;
+      padding-left: 1rem;
+      padding-right: 1rem;
     }
   }
   @media (max-width: 320px) {
     div.content {
-      padding-left: 12px;
-      padding-right: 12px;
+      padding-left: 0.75rem;
+      padding-right: 0.75rem;
     }
   }
 
-  main header {
-    padding: 20px 0 20px;
+  .site-header {
+    padding: 0 0 1.5rem;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1.25rem;
+    border-bottom: 1px solid rgba(45, 55, 72, 0.08);
   }
+
+  .site-heading {
+    flex: 1;
+  }
+
   main header h1 {
     font-weight: 700;
-    color: #333;
+    color: var(--fg);
   }
   main header h1 a {
     display: block;
@@ -326,49 +309,59 @@ if (profilePost?.FeaturedImage?.Url) {
   }
 
   main header div.description {
-    padding: 0.3rem 0 0.6rem;
-    font-size: 0.95rem;
+    padding: 0.6rem 0 0;
+    font-size: 1rem;
+    color: #4a5568;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .profile-wrapper {
+    margin: 1.5rem 0 2rem;
   }
 
   main footer {
-    margin: 30px 0 10px;
-    text-align: center;
-    font-size: 0.6rem;
-  }
-  @media (max-width: 640px) {
-    main footer {
-      margin: 0 auto 30px;
-    }
-  }
-  main footer span {
-    color: #777;
-  }
-  main footer a {
-    color: inherit;
-    text-decoration: underline;
+    margin-top: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
   }
 
-  .profile-link {
-    margin: 20px 0;
+  .footer-nav {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.75rem;
   }
-  .profile-link a {
-    display: flex;
-    align-items: center;
+
+  .footer-nav a {
+    display: block;
+    padding: 0.85rem 1rem;
+    text-align: center;
+    border-radius: var(--radius);
+    border: 1px solid rgba(49, 130, 206, 0.2);
+    background: rgba(49, 130, 206, 0.08);
+    color: var(--accents-1);
+    font-weight: 600;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .footer-nav a:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(49, 130, 206, 0.15);
+  }
+
+  .footer-meta {
+    text-align: center;
+    font-size: 0.85rem;
+    color: #6b7280;
+  }
+  .footer-meta a {
     color: inherit;
-    text-decoration: none;
-  }
-  .profile-link a:hover {
     text-decoration: underline;
-  }
-  .profile-link img.profile-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    margin-right: 10px;
-    object-fit: cover;
-  }
-  .profile-link span {
-    font-size: 0.9rem;
   }
 </style>
 
@@ -379,15 +372,15 @@ if (profilePost?.FeaturedImage?.Url) {
     --gap: 1rem;
     --gap-double: 2rem;
 
-    --bg: #EEEEEE; /* bodyのBG */
-    --fg: #333333; /* 基本文字色 */
-    --accents-1: #555555; /* リンク色 */
-    --accents-2: #555555;
-    --accents-3: #555555;
-    --geist-foreground: #000000;
-    --geist-success: #669900;
+    --bg: #F9F9F9;
+    --fg: #2D3748;
+    --accents-1: #ED64A6;
+    --accents-2: #F6AD55;
+    --accents-3: #63B3ED;
+    --geist-foreground: #1A202C;
+    --geist-success: #48BB78;
 
-    --radius: 4px;
+    --radius: 12px;
 
     --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
       'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
@@ -407,7 +400,7 @@ if (profilePost?.FeaturedImage?.Url) {
   body {
     padding: 0;
     margin: 0;
-    font-size: 14px;
+    font-size: 15px;
   }
 
   body {
@@ -418,16 +411,14 @@ if (profilePost?.FeaturedImage?.Url) {
       Helvetica, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN',
       'Hiragino Sans GB', メイリオ, Meiryo, 'Apple Color Emoji', Arial,
       sans-serif, 'Segoe UI Emoji', 'Segoe UI Symbol';
-
-    /*background-image: radial-gradient(#ddd 1px, transparent 1px),
-      radial-gradient(#ddd 1px, transparent 1px);*/
+    line-height: 1.7;
+    letter-spacing: 0.01em;
+    background-image: radial-gradient(rgba(237, 100, 166, 0.08) 1px, transparent 1px),
+      radial-gradient(rgba(99, 179, 237, 0.08) 1px, transparent 1px);
     background-position: 0 0, 25px 25px;
     background-attachment: fixed;
     background-size: 50px 50px;
-
-    /* Hack */
     overflow-x: hidden;
-
     -webkit-font-smoothing: antialiased;
     -webkit-text-size-adjust: 100%;
   }
@@ -456,25 +447,20 @@ if (profilePost?.FeaturedImage?.Url) {
   h1 {
     margin: 0;
     color: var(--fg);
-    font-size: 2rem;
-    font-weight: 700;
+    font-size: 2.2rem;
+    font-weight: 800;
   }
 
   @media (max-width: 640px) {
     h1 {
-      font-size: 1.6rem;
+      font-size: 1.7rem;
     }
   }
 
-  ol {
-    color: #222;
-    font-weight: 400;
-    font-size: 0.9rem;
-    line-height: 1.8rem;
-  }
+  ol,
   p,
   ul {
-    color: #222;
+    color: rgba(26, 32, 44, 0.95);
     font-weight: 400;
     font-size: 1rem;
     line-height: 1.8rem;

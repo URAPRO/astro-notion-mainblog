@@ -246,12 +246,12 @@ const breadcrumbLd = {
         <PostRelativeLink prevPost={prevPost} nextPost={nextPost} />
       </footer>
     </div>
-  </div>
 
-  <div slot="aside" class="aside">
-    <TableOfContentsSidebar headings={tocHeadings} />
-    <BlogPostsLink heading="最新記事" posts={recentPosts} />
-    <BlogPostsLink heading="おすすめ記事" posts={rankedPosts} />
-    <BlogTagsLink heading="カテゴリー" tags={tags} />
+    <section class={styles.widgetSection}>
+      <TableOfContentsSidebar headings={tocHeadings} />
+      <BlogPostsLink heading="最新記事" posts={recentPosts} />
+      <BlogPostsLink heading="おすすめ記事" posts={rankedPosts} />
+      <BlogTagsLink heading="カテゴリー" tags={tags} />
+    </section>
   </div>
 </Layout>

@@ -59,11 +59,11 @@ const posts = allPosts.filter((post) => post.ExternalLink && post.ExternalLink.i
         ))
       )
     }
-  </div>
 
-  <div slot="aside" class={styles.aside}>
-    <BlogPostsLink heading="最新記事" posts={recentPosts} />
-    <BlogPostsLink heading="おすすめ記事" posts={rankedPosts} />
-    <BlogTagsLink heading="カテゴリー" tags={tags} />
+    <section class={styles.widgetSection}>
+      <BlogPostsLink heading="最新記事" posts={recentPosts} />
+      <BlogPostsLink heading="おすすめ記事" posts={rankedPosts} />
+      <BlogTagsLink heading="カテゴリー" tags={tags} />
+    </section>
   </div>
 </Layout> 

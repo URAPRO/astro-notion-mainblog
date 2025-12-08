@@ -281,3 +281,11 @@
 .postsPage .seeMoreWrapper {
   grid-column: 1 / -1;
 }
+
+.widgetSection {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 1rem;
+  margin: 2rem 0 0;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
