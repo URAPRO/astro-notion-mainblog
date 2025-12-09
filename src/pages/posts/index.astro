@@ -26,12 +26,15 @@ const [allPosts, recentPosts, rankedPosts, tags] = await Promise.all([
   getAllTags(),
 ])
 
-// 内部記事のみ抽出
-const internalAllPosts = allPosts.filter((post) => !post.ExternalLink)
+const sortedPosts = allPosts
+  .slice()
+  .sort((a, b) => (a.Date < b.Date ? 1 : -1))
 
-const numberOfPages = Math.floor(internalAllPosts.length / NUMBER_OF_POSTS_PER_PAGE) + (internalAllPosts.length % NUMBER_OF_POSTS_PER_PAGE > 0 ? 1 : 0)
+const numberOfPages =
+  Math.floor(sortedPosts.length / NUMBER_OF_POSTS_PER_PAGE) +
+  (sortedPosts.length % NUMBER_OF_POSTS_PER_PAGE > 0 ? 1 : 0)
 
-const posts = internalAllPosts.slice(0, NUMBER_OF_POSTS_PER_PAGE)
+const posts = sortedPosts.slice(0, NUMBER_OF_POSTS_PER_PAGE)
 ---
 
 <Layout 
@@ -59,7 +62,12 @@ const posts = internalAllPosts.slice(0, NUMBER_OF_POSTS_PER_PAGE)
                 </div>
                 <PostTags post={post} enableLink={true} />
               </div>
-              <a class={styles.postLink} href={getPostLink(post)}></a>
+              <a
+                class={styles.postLink}
+                href={getPostLink(post)}
+                target={post.ExternalLink ? '_blank' : undefined}
+                rel={post.ExternalLink ? 'noopener noreferrer' : undefined}
+              ></a>
             </div>
           </div>
         ))

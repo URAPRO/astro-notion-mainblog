@@ -164,6 +164,25 @@ export const getPostLink = (post: Post) => {
   return post.ExternalLink ? post.ExternalLink : pathJoin(BASE_PATH, `/posts/${post.Slug}`)
 }
 
+export const getExternalBadgeLabel = (post: Post): string | null => {
+  if (!post.ExternalLink) {
+    return null
+  }
+
+  try {
+    const hostname = new URL(post.ExternalLink).hostname.replace(/^www\./, '')
+    if (!hostname) {
+      return 'External'
+    }
+    if (hostname === 'note.com') {
+      return 'note'
+    }
+    return hostname
+  } catch {
+    return 'External'
+  }
+}
+
 export const getPostFullLink = (post: Post) => {
   return new URL(getPostLink(post), import.meta.env.SITE).toString();
 }

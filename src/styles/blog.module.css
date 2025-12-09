@@ -220,6 +220,22 @@
 .titleText {
   display: inline;
 }
+
+.externalBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.5rem;
+  margin-left: 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  background: rgba(99, 179, 237, 0.18);
+  color: #1a365d;
+  border: 1px solid rgba(26, 54, 93, 0.15);
+}
+
 .title a {
   color: inherit;
   text-decoration: none;

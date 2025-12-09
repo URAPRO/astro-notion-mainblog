@@ -53,7 +53,12 @@ const posts = allPosts.filter((post) => post.ExternalLink && post.ExternalLink.i
                 </div>
                 <PostTags post={post} enableLink={true} />
               </div>
-              <a class={styles.postLink} href={getPostLink(post)} target="_blank"></a>
+              <a
+                class={styles.postLink}
+                href={getPostLink(post)}
+                target="_blank"
+                rel="noopener noreferrer"
+              ></a>
             </div>
           </div>
         ))

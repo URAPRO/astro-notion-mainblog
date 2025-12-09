@@ -71,7 +71,12 @@ const currentTag = posts[0]?.Tags.find((t) => t.name === tag)
                 </div>
                 <PostTags post={post} enableLink={true} />
               </div>
-              <a class={styles.postLink} href={getPostLink(post)} target={post.ExternalLink ? "_blank" : undefined}></a>
+              <a
+                class={styles.postLink}
+                href={getPostLink(post)}
+                target={post.ExternalLink ? '_blank' : undefined}
+                rel={post.ExternalLink ? 'noopener noreferrer' : undefined}
+              ></a>
             </div>
           </div>
         ))
