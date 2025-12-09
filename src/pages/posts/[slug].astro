@@ -235,8 +235,9 @@ const breadcrumbLd = {
              data-ad-format="auto"
              data-full-width-responsive="true"></ins>
         <script>
-             (window as any).adsbygoogle = (window as any).adsbygoogle || [];
-             (window as any).adsbygoogle.push({});
+             const adsWindow = window as Window & { adsbygoogle: unknown[] };
+             adsWindow.adsbygoogle = adsWindow.adsbygoogle || [];
+             adsWindow.adsbygoogle.push({});
         </script>
       </div>
 
