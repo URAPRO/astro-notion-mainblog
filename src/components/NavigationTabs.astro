@@ -1,0 +1,68 @@
+---
+import { getNavLink } from '../lib/blog-helpers.ts'
+
+const currentPath = Astro.url.pathname
+
+// タブの定義
+const tabs = [
+  { label: '記事', href: getNavLink('/'), pattern: /^\/$|^\/posts|^\/blog|^\/page\// },
+  { label: 'プロフィール', href: getNavLink('/posts/profile'), pattern: /\/posts\/profile/ },
+]
+
+// 現在のパスに基づいてアクティブなタブを判定
+function isActive(pattern: RegExp): boolean {
+  return pattern.test(currentPath)
+}
+---
+
+<nav class="navigation-tabs">
+  {tabs.map((tab) => (
+    <a
+      href={tab.href}
+      class:list={['tab', { active: isActive(tab.pattern) }]}
+    >
+      {tab.label}
+    </a>
+  ))}
+</nav>
+
+<style>
+  .navigation-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid #e0e0e0;
+    margin-bottom: 1.5rem;
+  }
+
+  .tab {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #666;
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+    margin-bottom: -1px;
+  }
+
+  .tab:hover {
+    color: #333;
+  }
+
+  .tab.active {
+    color: #333;
+    border-bottom-color: #333;
+    font-weight: 600;
+  }
+
+  @media (max-width: 640px) {
+    .navigation-tabs {
+      margin-bottom: 1rem;
+    }
+
+    .tab {
+      padding: 0.6rem 1rem;
+      font-size: 0.9rem;
+    }
+  }
+</style>
