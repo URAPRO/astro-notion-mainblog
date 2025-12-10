@@ -4,6 +4,8 @@ import {
   getPosts,
   getRankedPosts,
   getAllTags,
+  getPostBySlug,
+  getAllBlocksByBlockId,
 } from '../lib/notion/client.ts'
 import { getPostLink } from '../lib/blog-helpers.ts'
 import Layout from '../layouts/Layout.astro'
@@ -15,14 +17,18 @@ import PostTitle from '../components/PostTitle.astro'
 import PostFeaturedImage from '../components/PostFeaturedImage.astro'
 import BlogPostsLink from '../components/BlogPostsLink.astro'
 import BlogTagsLink from '../components/BlogTagsLink.astro'
+import PostBody from '../components/PostBody.astro'
 import styles from '../styles/blog.module.css'
 
-const [allPosts, recentPosts, rankedPosts, tags] = await Promise.all([
+const [allPosts, recentPosts, rankedPosts, tags, profilePost] = await Promise.all([
   getAllBlogPosts(),
   getPosts(5),
   getRankedPosts(),
   getAllTags(),
+  getPostBySlug('profile'),
 ])
+
+const profileBlocks = profilePost?.PageId ? await getAllBlocksByBlockId(profilePost.PageId) : []
 
 const internalPosts = allPosts.filter((post) => !post.ExternalLink).slice(0, 4)
 const notePosts = allPosts.filter((post) => post.ExternalLink && post.ExternalLink.includes('note.com')).slice(0, 4)
@@ -34,75 +40,120 @@ const notePosts = allPosts.filter((post) => post.ExternalLink && post.ExternalLi
   description="urapro.dev – プログラマーUraによるWeb開発技術、プログラミングTIPS、読書記録を発信するブログ。実践的な情報であなたのスキルアップを応援します。"
   ogImage=""
 >
-  <div slot="main" class={`${styles.main} ${styles.postsPage}`}>  
-    {/* 内部記事セクション */}
-    <section>
-      <h2>最新記事</h2>
-      {
-        internalPosts.length === 0 ? (
-          <NoContents contents={internalPosts} />
-        ) : (
-          internalPosts.map((post) => (
-            <div class={styles.post} data-post-slug={post.Slug}>
-              <div class={styles.postDetail}>
-                <div class={styles.postDetailLeft}>
-                  <PostFeaturedImage post={post} enableLink={false} />
-                </div>
-                <div class={styles.postDetailRight}>
-                  <PostTitle post={post} enableLink={true} />
-                  <div class={styles.postDate}>
-                    <PostDate post={post} />
-                    <PostUpdateDate post={post} />
+  <div slot="main" class={styles.main}>  
+    <div class={styles.tabNav} id="tab-nav">
+      <button class={`${styles.tabButton} ${styles.tabActive}`} data-tab="blog" id="btn-blog">Blog</button>
+      <button class={styles.tabButton} data-tab="profile" id="btn-profile">Profile</button>
+    </div>
+
+    <div class={`${styles.tabContent} ${styles.tabActive}`} id="content-blog">
+      <div class={styles.blogContent}>
+        {/* 内部記事セクション */}
+        <section>
+          <h2>最新記事</h2>
+          {
+            internalPosts.length === 0 ? (
+              <NoContents contents={internalPosts} />
+            ) : (
+              internalPosts.map((post) => (
+                <div class={styles.post} data-post-slug={post.Slug}>
+                  <div class={styles.postDetail}>
+                    <div class={styles.postDetailLeft}>
+                      <PostFeaturedImage post={post} enableLink={false} />
+                    </div>
+                    <div class={styles.postDetailRight}>
+                      <PostTitle post={post} enableLink={true} />
+                      <div class={styles.postDate}>
+                        <PostDate post={post} />
+                        <PostUpdateDate post={post} />
+                      </div>
+                      <PostTags post={post} enableLink={true} />
+                    </div>
+                    <a class={styles.postLink} href={getPostLink(post)}></a>
                   </div>
-                  <PostTags post={post} enableLink={true} />
                 </div>
-                <a class={styles.postLink} href={getPostLink(post)}></a>
-              </div>
-            </div>
-          ))
+              ))
+            )
+          }
+          <div class={styles.seeMoreWrapper}>
+            <a href="/posts" class={styles.seeMoreButton}>もっと見る</a>
+          </div>
+        </section>
+
+        {/* note 記事セクション */}
+        <section>
+          <h2>note の記事</h2>
+          {
+            notePosts.length === 0 ? (
+              <NoContents contents={notePosts} />
+            ) : (
+              notePosts.map((post) => (
+                <div class={styles.post} data-post-slug={post.Slug}>
+                  <div class={styles.postDetail}>
+                    <div class={styles.postDetailLeft}>
+                      <PostFeaturedImage post={post} enableLink={false} />
+                    </div>
+                    <div class={styles.postDetailRight}>
+                      <PostTitle post={post} enableLink={true} />
+                      <div class={styles.postDate}>
+                        <PostDate post={post} />
+                        <PostUpdateDate post={post} />
+                      </div>
+                      <PostTags post={post} enableLink={true} />
+                    </div>
+                    <a class={styles.postLink} href={getPostLink(post)} target="_blank"></a>
+                  </div>
+                </div>
+              ))
+            )
+          }
+          <div class={styles.seeMoreWrapper}>
+            <a href="/note" class={styles.seeMoreButton}>もっと見る</a>
+          </div>
+        </section>
+      </div>
+
+      <div class={styles.blogWidgets}>
+        <BlogPostsLink heading="最新記事" posts={recentPosts} />
+        <BlogPostsLink heading="おすすめ記事" posts={rankedPosts} />
+        <BlogTagsLink heading="カテゴリー" tags={tags} />
+      </div>
+    </div>
+
+    <div class={styles.tabContent} id="content-profile">
+      {
+        profilePost && profileBlocks.length > 0 ? (
+          <div class={styles.post}>
+            <PostTitle post={profilePost} enableLink={false} />
+            <PostBody blocks={profileBlocks} />
+          </div>
+        ) : (
+          <NoContents contents={[]} />
         )
       }
-      <div class={styles.seeMoreWrapper}>
-        <a href="/posts" class={styles.seeMoreButton}>もっと見る</a>
-      </div>
-    </section>
-
-    {/* note 記事セクション */}
-    <section>
-      <h2>note の記事</h2>
-      {
-        notePosts.length === 0 ? (
-          <NoContents contents={notePosts} />
-        ) : (
-          notePosts.map((post) => (
-            <div class={styles.post} data-post-slug={post.Slug}>
-              <div class={styles.postDetail}>
-                <div class={styles.postDetailLeft}>
-                  <PostFeaturedImage post={post} enableLink={false} />
-                </div>
-                <div class={styles.postDetailRight}>
-                  <PostTitle post={post} enableLink={true} />
-                  <div class={styles.postDate}>
-                    <PostDate post={post} />
-                    <PostUpdateDate post={post} />
-                  </div>
-                  <PostTags post={post} enableLink={true} />
-                </div>
-                <a class={styles.postLink} href={getPostLink(post)} target="_blank"></a>
-              </div>
-            </div>
-          ))
-        )
-      }
-      <div class={styles.seeMoreWrapper}>
-        <a href="/note" class={styles.seeMoreButton}>もっと見る</a>
-      </div>
-    </section>
-  </div>
-
-  <div slot="aside" class={styles.aside}>
-    <BlogPostsLink heading="最新記事" posts={recentPosts} />
-    <BlogPostsLink heading="おすすめ記事" posts={rankedPosts} />
-    <BlogTagsLink heading="カテゴリー" tags={tags} />
+    </div>
   </div>
 </Layout>
+
+<script>
+  const tabActiveClass = '${styles.tabActive}'
+  const tabButtons = Array.from(document.querySelectorAll('[data-tab]'))
+  const tabContents = {
+    blog: document.getElementById('content-blog'),
+    profile: document.getElementById('content-profile'),
+  }
+
+  const activateTab = (key) => {
+    tabButtons.forEach((btn) => {
+      btn.classList.toggle(tabActiveClass, btn.dataset.tab === key)
+    })
+    Object.entries(tabContents).forEach(([contentKey, el]) => {
+      if (!el) return
+      el.classList.toggle(tabActiveClass, contentKey === key)
+    })
+  }
+
+  tabButtons.forEach((btn) => {
+    btn.addEventListener('click', () => activateTab(btn.dataset.tab))
+  })
+</script>
