@@ -70,6 +70,17 @@ export async function getAllPosts(): Promise<Post[]> {
     return Promise.resolve(postsCache)
   }
 
+  // 環境変数のチェック
+  if (!NOTION_API_SECRET || !DATABASE_ID) {
+    const missingVars: string[] = []
+    if (!NOTION_API_SECRET) missingVars.push('NOTION_API_SECRET')
+    if (!DATABASE_ID) missingVars.push('DATABASE_ID')
+    throw new Error(
+      `Missing required environment variables: ${missingVars.join(', ')}. ` +
+      'Please set these variables in your Cloudflare Pages environment settings.'
+    )
+  }
+
   const params: requestParams.QueryDatabase = {
     database_id: DATABASE_ID,
     filter: {
@@ -125,6 +136,12 @@ export async function getAllPosts(): Promise<Post[]> {
         } catch (error: unknown) {
           if (error instanceof APIResponseError) {
             if (error.status && error.status >= 400 && error.status < 500) {
+              // 401 Unauthorized の場合は環境変数の問題であることを明確にする
+              if (error.status === 401) {
+                throw new Error(
+                  'Notion API authentication failed. Please check that NOTION_API_SECRET is correct in your Cloudflare Pages environment settings.'
+                )
+              }
               bail(error)
             }
           }
@@ -557,6 +574,17 @@ export async function getDatabase(): Promise<Database> {
     return Promise.resolve(dbCache)
   }
 
+  // 環境変数のチェック
+  if (!NOTION_API_SECRET || !DATABASE_ID) {
+    const missingVars: string[] = []
+    if (!NOTION_API_SECRET) missingVars.push('NOTION_API_SECRET')
+    if (!DATABASE_ID) missingVars.push('DATABASE_ID')
+    throw new Error(
+      `Missing required environment variables: ${missingVars.join(', ')}. ` +
+      'Please set these variables in your Cloudflare Pages environment settings.'
+    )
+  }
+
   const params: requestParams.RetrieveDatabase = {
     database_id: DATABASE_ID,
   }
@@ -570,6 +598,12 @@ export async function getDatabase(): Promise<Database> {
       } catch (error: unknown) {
         if (error instanceof APIResponseError) {
           if (error.status && error.status >= 400 && error.status < 500) {
+            // 401 Unauthorized の場合は環境変数の問題であることを明確にする
+            if (error.status === 401) {
+              throw new Error(
+                'Notion API authentication failed. Please check that NOTION_API_SECRET is correct in your Cloudflare Pages environment settings.'
+              )
+            }
             bail(error)
           }
         }
