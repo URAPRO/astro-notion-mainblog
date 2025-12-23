@@ -42,12 +42,6 @@ const mainTags = tags.slice(0, 5)
 
     <div class="header-actions">
       <SearchButton />
-      <a href={getNavLink('/profile')} class="profile-link-header">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
-          <circle cx="12" cy="7" r="4"/>
-        </svg>
-      </a>
       <button class="mobile-menu-toggle" aria-label="メニューを開く">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="3" y1="12" x2="21" y2="12"/>
@@ -65,9 +59,6 @@ const mainTags = tags.slice(0, 5)
         {tag.name}
       </a>
     ))}
-    <a href={getNavLink('/profile')} class="mobile-nav-link">
-      プロフィール
-    </a>
   </nav>
 </header>
 
@@ -164,22 +155,6 @@ const mainTags = tags.slice(0, 5)
     display: none;
   }
 
-  .profile-link-header {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    color: #5C5650;
-    transition: all 0.2s ease;
-  }
-
-  .profile-link-header:hover {
-    background: #F5F0E8;
-    color: #E07A3D;
-  }
-
   .mobile-menu-toggle {
     display: none;
     padding: 0.5rem;
@@ -221,10 +196,6 @@ const mainTags = tags.slice(0, 5)
   /* モバイル対応 */
   @media (max-width: 768px) {
     .main-nav {
-      display: none;
-    }
-
-    .profile-link-header {
       display: none;
     }
 

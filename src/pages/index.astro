@@ -1,12 +1,26 @@
 ---
 import {
   getAllBlogPosts,
+  getPostBySlug,
 } from '../lib/notion/client.ts'
-import { getPostLink, getDateStr } from '../lib/blog-helpers.ts'
+import { getPostLink, getDateStr, getStaticFilePath, filePath } from '../lib/blog-helpers.ts'
 import Layout from '../layouts/Layout.astro'
 import PostFeaturedImage from '../components/PostFeaturedImage.astro'
+import HeroSection from '../components/HeroSection.astro'
 
 const allPosts = await getAllBlogPosts()
+
+// プロフィール画像を取得
+const profilePost = await getPostBySlug('profile')
+let profileIconURL = getStaticFilePath('/default-og-image.png')
+if (profilePost?.FeaturedImage?.Url) {
+  try {
+    const url = new URL(profilePost.FeaturedImage.Url)
+    profileIconURL = filePath(url)
+  } catch {
+    console.log('Invalid profile image URL: ', profilePost.FeaturedImage.Url)
+  }
+}
 
 // プラットフォーム別に記事を分類
 const blogPosts = allPosts.filter((post) => !post.ExternalLink)
@@ -48,6 +62,8 @@ const platformConfig = {
   description="urapro.dev – プログラマーUraによるWeb開発技術、プログラミングTIPS、読書記録を発信するブログ。実践的な情報であなたのスキルアップを応援します。"
   ogImage=""
 >
+  <HeroSection slot="hero" profileIconURL={profileIconURL} />
+  
   <div slot="main" class="home-content">  
     <section class="posts-section">
       <h2 class="section-heading">最新の記事</h2>
