@@ -1,31 +1,45 @@
 ---
 import {
   getAllBlogPosts,
-  getPosts,
-  getRankedPosts,
-  getAllTags,
 } from '../lib/notion/client.ts'
-import { getPostLink } from '../lib/blog-helpers.ts'
+import { getPostLink, getDateStr } from '../lib/blog-helpers.ts'
 import Layout from '../layouts/Layout.astro'
-import NoContents from '../components/NoContents.astro'
-import PostDate from '../components/PostDate.astro'
-import PostUpdateDate from '../components/PostUpdateDate.astro'
-import PostTags from '../components/PostTags.astro'
-import PostTitle from '../components/PostTitle.astro'
 import PostFeaturedImage from '../components/PostFeaturedImage.astro'
-import BlogPostsLink from '../components/BlogPostsLink.astro'
-import BlogTagsLink from '../components/BlogTagsLink.astro'
-import styles from '../styles/blog.module.css'
 
-const [allPosts, recentPosts, rankedPosts, tags] = await Promise.all([
-  getAllBlogPosts(),
-  getPosts(5),
-  getRankedPosts(),
-  getAllTags(),
-])
+const allPosts = await getAllBlogPosts()
 
-const internalPosts = allPosts.filter((post) => !post.ExternalLink).slice(0, 4)
-const notePosts = allPosts.filter((post) => post.ExternalLink && post.ExternalLink.includes('note.com')).slice(0, 4)
+// プラットフォーム別に記事を分類
+const blogPosts = allPosts.filter((post) => !post.ExternalLink)
+const notePosts = allPosts.filter((post) => post.ExternalLink?.includes('note.com'))
+const zennPosts = allPosts.filter((post) => post.ExternalLink?.includes('zenn.dev'))
+
+// 各プラットフォームのFeatured記事（最新1件）
+const featuredBlog = blogPosts[0]
+const featuredNote = notePosts[0]
+const featuredZenn = zennPosts[0]
+
+// Featured記事のSlug一覧
+const featuredSlugs = [featuredBlog?.Slug, featuredNote?.Slug, featuredZenn?.Slug].filter(Boolean)
+
+// 右側の記事リスト（Featuredを除く）
+const rightPosts = allPosts
+  .filter((post) => !featuredSlugs.includes(post.Slug))
+  .slice(0, 8)
+
+// プラットフォームを判定するヘルパー
+const getPlatform = (post: typeof allPosts[0]) => {
+  if (!post.ExternalLink) return 'blog'
+  if (post.ExternalLink.includes('note.com')) return 'note'
+  if (post.ExternalLink.includes('zenn.dev')) return 'zenn'
+  return 'external'
+}
+
+const platformConfig = {
+  blog: { icon: '🏠', label: 'Blog', color: '#E07A3D' },
+  note: { icon: '✍️', label: 'note', color: '#41c9b4' },
+  zenn: { icon: '💻', label: 'Zenn', color: '#3EA8FF' },
+  external: { icon: '🔗', label: 'External', color: '#888' },
+}
 ---
 
 <Layout 
@@ -34,75 +48,517 @@ const notePosts = allPosts.filter((post) => post.ExternalLink && post.ExternalLi
   description="urapro.dev – プログラマーUraによるWeb開発技術、プログラミングTIPS、読書記録を発信するブログ。実践的な情報であなたのスキルアップを応援します。"
   ogImage=""
 >
-  <div slot="main" class={`${styles.main} ${styles.postsPage}`}>  
-    {/* 内部記事セクション */}
-    <section>
-      <h2>最新記事</h2>
-      {
-        internalPosts.length === 0 ? (
-          <NoContents contents={internalPosts} />
-        ) : (
-          internalPosts.map((post) => (
-            <div class={styles.post} data-post-slug={post.Slug}>
-              <div class={styles.postDetail}>
-                <div class={styles.postDetailLeft}>
-                  <PostFeaturedImage post={post} enableLink={false} />
-                </div>
-                <div class={styles.postDetailRight}>
-                  <PostTitle post={post} enableLink={true} />
-                  <div class={styles.postDate}>
-                    <PostDate post={post} />
-                    <PostUpdateDate post={post} />
-                  </div>
-                  <PostTags post={post} enableLink={true} />
-                </div>
-                <a class={styles.postLink} href={getPostLink(post)}></a>
+  <div slot="main" class="home-content">  
+    <section class="posts-section">
+      <h2 class="section-heading">最新の記事</h2>
+      
+      <div class="posts-grid">
+        {/* 左側: 各プラットフォームのFeatured記事 */}
+        <div class="featured-column">
+          {/* Blog Featured */}
+          {featuredBlog && (
+            <a href={getPostLink(featuredBlog)} class="featured-card">
+              <div class="platform-badge" style={`--platform-color: ${platformConfig.blog.color}`}>
+                <span class="platform-icon">{platformConfig.blog.icon}</span>
+                <span class="platform-label">{platformConfig.blog.label}</span>
               </div>
-            </div>
-          ))
-        )
-      }
-      <div class={styles.seeMoreWrapper}>
-        <a href="/posts" class={styles.seeMoreButton}>もっと見る</a>
+              <div class="featured-image">
+                <PostFeaturedImage post={featuredBlog} enableLink={false} />
+              </div>
+              <div class="featured-content">
+                <h3 class="featured-title">
+                  {featuredBlog.Icon?.Type === 'emoji' && (
+                    <span class="post-icon">{featuredBlog.Icon.Emoji}</span>
+                  )}
+                  {featuredBlog.Title}
+                </h3>
+                <div class="featured-meta">
+                  <span class="featured-tag">{featuredBlog.Tags?.[0]?.name}</span>
+                  <span class="featured-date">{getDateStr(featuredBlog.Date)}</span>
+                </div>
+              </div>
+            </a>
+          )}
+
+          {/* note Featured */}
+          {featuredNote && (
+            <a href={getPostLink(featuredNote)} target="_blank" class="featured-card">
+              <div class="platform-badge" style={`--platform-color: ${platformConfig.note.color}`}>
+                <span class="platform-icon">{platformConfig.note.icon}</span>
+                <span class="platform-label">{platformConfig.note.label}</span>
+              </div>
+              <div class="featured-image">
+                <PostFeaturedImage post={featuredNote} enableLink={false} />
+              </div>
+              <div class="featured-content">
+                <h3 class="featured-title">
+                  {featuredNote.Icon?.Type === 'emoji' && (
+                    <span class="post-icon">{featuredNote.Icon.Emoji}</span>
+                  )}
+                  {featuredNote.Title}
+                </h3>
+                <div class="featured-meta">
+                  <span class="featured-tag">{featuredNote.Tags?.[0]?.name}</span>
+                  <span class="featured-date">{getDateStr(featuredNote.Date)}</span>
+                </div>
+              </div>
+            </a>
+          )}
+
+          {/* Zenn Featured */}
+          {featuredZenn && (
+            <a href={getPostLink(featuredZenn)} target="_blank" class="featured-card">
+              <div class="platform-badge" style={`--platform-color: ${platformConfig.zenn.color}`}>
+                <span class="platform-icon">{platformConfig.zenn.icon}</span>
+                <span class="platform-label">{platformConfig.zenn.label}</span>
+              </div>
+              <div class="featured-image">
+                <PostFeaturedImage post={featuredZenn} enableLink={false} />
+              </div>
+              <div class="featured-content">
+                <h3 class="featured-title">
+                  {featuredZenn.Icon?.Type === 'emoji' && (
+                    <span class="post-icon">{featuredZenn.Icon.Emoji}</span>
+                  )}
+                  {featuredZenn.Title}
+                </h3>
+                <div class="featured-meta">
+                  <span class="featured-tag">{featuredZenn.Tags?.[0]?.name}</span>
+                  <span class="featured-date">{getDateStr(featuredZenn.Date)}</span>
+                </div>
+              </div>
+            </a>
+          )}
+        </div>
+
+        {/* 右側: 全プラットフォーム混合リスト（サムネイル付き） */}
+        <div class="list-column">
+          <ul class="posts-list">
+            {rightPosts.map((post) => {
+              const platform = getPlatform(post)
+              const config = platformConfig[platform]
+              return (
+                <li class="post-item">
+                  <a 
+                    href={getPostLink(post)} 
+                    target={post.ExternalLink ? "_blank" : undefined}
+                    class="post-item-link"
+                  >
+                    <div class="post-item-thumb">
+                      <PostFeaturedImage post={post} enableLink={false} />
+                    </div>
+                    <span class="post-item-icon">
+                      {post.Icon?.Type === 'emoji' ? post.Icon.Emoji : '📝'}
+                    </span>
+                    <span class="post-item-title">{post.Title}</span>
+                    <span class="post-item-meta">
+                      <span 
+                        class="post-item-platform"
+                        style={`--platform-color: ${config.color}`}
+                      >
+                        {config.label}
+                      </span>
+                      <span class="post-item-date">{getDateStr(post.Date)}</span>
+                    </span>
+                  </a>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      </div>
+      
+      <div class="see-more-wrapper">
+        <a href="/posts" class="see-more-button">すべての記事を見る →</a>
       </div>
     </section>
-
-    {/* note 記事セクション */}
-    <section>
-      <h2>note の記事</h2>
-      {
-        notePosts.length === 0 ? (
-          <NoContents contents={notePosts} />
-        ) : (
-          notePosts.map((post) => (
-            <div class={styles.post} data-post-slug={post.Slug}>
-              <div class={styles.postDetail}>
-                <div class={styles.postDetailLeft}>
-                  <PostFeaturedImage post={post} enableLink={false} />
-                </div>
-                <div class={styles.postDetailRight}>
-                  <PostTitle post={post} enableLink={true} />
-                  <div class={styles.postDate}>
-                    <PostDate post={post} />
-                    <PostUpdateDate post={post} />
-                  </div>
-                  <PostTags post={post} enableLink={true} />
-                </div>
-                <a class={styles.postLink} href={getPostLink(post)} target="_blank"></a>
-              </div>
-            </div>
-          ))
-        )
-      }
-      <div class={styles.seeMoreWrapper}>
-        <a href="/note" class={styles.seeMoreButton}>もっと見る</a>
-      </div>
-    </section>
-  </div>
-
-  <div slot="aside" class={styles.aside}>
-    <BlogPostsLink heading="最新記事" posts={recentPosts} />
-    <BlogPostsLink heading="おすすめ記事" posts={rankedPosts} />
-    <BlogTagsLink heading="カテゴリー" tags={tags} />
   </div>
 </Layout>
+
+<style>
+  .home-content {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  .posts-section {
+    margin-bottom: 3rem;
+  }
+
+  .section-heading {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--fg);
+    margin: 0 0 1.5rem;
+    padding-left: 1rem;
+    position: relative;
+  }
+
+  .section-heading::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 1.2em;
+    background: linear-gradient(180deg, var(--accents-1) 0%, #D4693A 100%);
+    border-radius: 2px;
+  }
+
+  /* 2カラムグリッド - 左:狭め 右:広め、高さ揃え */
+  .posts-grid {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 1.5rem;
+    align-items: stretch;
+  }
+
+  /* 左側: Featured カラム */
+  .featured-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  /* 右側: リストカラム */
+  .list-column {
+    display: flex;
+    flex-direction: column;
+    background: var(--card-bg);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+  }
+
+  /* Featured カード - 縦型で大きく表示、均等高さ */
+  .featured-card {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    background: var(--card-bg);
+    border-radius: 12px;
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid var(--border-color);
+    position: relative;
+  }
+
+  .featured-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    border-color: var(--platform-color, var(--accents-1));
+  }
+
+  .featured-card:hover .featured-image :global(img) {
+    transform: scale(1.03);
+  }
+
+  /* プラットフォームバッジ - サムネイル上に表示 */
+  .platform-badge {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.3rem 0.5rem;
+    background: var(--platform-color, #888);
+    border-radius: 6px;
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  }
+
+  .platform-icon {
+    font-size: 0.85rem;
+  }
+
+  .platform-label {
+    display: inline;
+  }
+
+  .featured-image {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    background: linear-gradient(135deg, #F5F0E8 0%, #EDE5DA 100%);
+  }
+
+  .featured-image :global(.post-featured-image) {
+    aspect-ratio: 16 / 10;
+    height: 100%;
+  }
+
+  .featured-image :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+
+  .featured-content {
+    padding: 0.75rem;
+  }
+
+  .featured-title {
+    margin: 0 0 0.4rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--fg);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .post-icon {
+    margin-right: 0.15em;
+  }
+
+  .featured-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .featured-tag {
+    padding: 0.15rem 0.4rem;
+    background: var(--hover-bg);
+    border-radius: 3px;
+    font-size: 0.65rem;
+    color: var(--accents-3);
+  }
+
+  .featured-date {
+    font-size: 0.7rem;
+    color: var(--accents-2);
+  }
+
+  /* シンプルリスト - 左側と高さを揃える */
+  .posts-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .post-item {
+    flex: 1;
+    display: flex;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .post-item:last-child {
+    border-bottom: none;
+  }
+
+  .post-item-link {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 0.75rem;
+    text-decoration: none;
+    color: inherit;
+    transition: background 0.2s ease;
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .post-item-link:hover {
+    background: var(--hover-bg);
+  }
+
+  .post-item-thumb {
+    width: 80px;
+    height: 45px;
+    flex-shrink: 0;
+    border-radius: 4px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #F5F0E8 0%, #EDE5DA 100%);
+  }
+
+  .post-item-thumb :global(.post-featured-image) {
+    width: 100%;
+    height: 100%;
+  }
+
+  .post-item-thumb :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .post-item-icon {
+    font-size: 1rem;
+    flex-shrink: 0;
+    width: 1.25rem;
+    text-align: center;
+  }
+
+  .post-item-title {
+    flex-grow: 1;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--fg);
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .post-item-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.15rem;
+    flex-shrink: 0;
+  }
+
+  .post-item-platform {
+    padding: 0.1rem 0.35rem;
+    background: var(--platform-color, #888);
+    border-radius: 3px;
+    font-size: 0.55rem;
+    font-weight: 600;
+    color: #fff;
+  }
+
+  .post-item-date {
+    font-size: 0.6rem;
+    color: var(--accents-2);
+    white-space: nowrap;
+  }
+
+  /* もっと見るボタン */
+  .see-more-wrapper {
+    margin-top: 2rem;
+    text-align: center;
+  }
+
+  .see-more-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.75rem 2rem;
+    background: linear-gradient(135deg, var(--accents-1) 0%, #D4693A 100%);
+    border-radius: 9999px;
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(224, 122, 61, 0.25);
+  }
+
+  .see-more-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(224, 122, 61, 0.35);
+    color: #fff;
+  }
+
+  /* レスポンシブ */
+  @media (max-width: 900px) {
+    .posts-grid {
+      grid-template-columns: 240px 1fr;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .posts-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .featured-column {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+    }
+
+    .featured-image {
+      aspect-ratio: 4 / 3;
+    }
+
+    .featured-image :global(.post-featured-image) {
+      aspect-ratio: 4 / 3;
+    }
+
+    .featured-content {
+      padding: 0.6rem;
+    }
+
+    .featured-title {
+      font-size: 0.8rem;
+      -webkit-line-clamp: 2;
+    }
+
+    .platform-badge {
+      padding: 0.2rem 0.4rem;
+      font-size: 0.6rem;
+    }
+
+    .platform-label {
+      display: none;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .home-content {
+      padding: 0 1rem;
+    }
+
+    .featured-column {
+      grid-template-columns: 1fr;
+    }
+
+    .featured-card {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .featured-image {
+      width: 5rem;
+      height: 5rem;
+      aspect-ratio: 1 / 1;
+      flex-shrink: 0;
+    }
+
+    .featured-image :global(.post-featured-image) {
+      aspect-ratio: 1 / 1;
+    }
+
+    .featured-content {
+      flex-grow: 1;
+      padding: 0;
+    }
+
+    .platform-badge {
+      position: static;
+      margin-bottom: 0.3rem;
+    }
+
+    .post-item-link {
+      padding: 0.5rem 0.6rem;
+    }
+
+    .post-item-thumb {
+      width: 60px;
+      height: 34px;
+    }
+
+    .post-item-title {
+      font-size: 0.75rem;
+    }
+  }
+</style>

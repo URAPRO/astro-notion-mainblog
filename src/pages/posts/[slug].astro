@@ -1,13 +1,9 @@
 ---
 import * as interfaces from '../../lib/interfaces.ts'
 import {
-  getPosts,
   getAllPosts,
-  getRankedPosts,
   getPostBySlug,
-  getPostsByTag,
   getBlock,
-  getAllTags,
   getAllBlocksByBlockId,
   downloadFile,
 } from '../../lib/notion/client.ts'
@@ -29,9 +25,6 @@ import PostTags from '../../components/PostTags.astro'
 import PostTitle from '../../components/PostTitle.astro'
 import PostBody from '../../components/PostBody.astro'
 import PostRelativeLink from '../../components/PostRelativeLink.astro'
-import BlogPostsLink from '../../components/BlogPostsLink.astro'
-import BlogTagsLink from '../../components/BlogTagsLink.astro'
-import TableOfContentsSidebar from '../../components/TableOfContentsSidebar.astro';
 import ScrollProgressBar from '../../components/ScrollProgressBar.astro';
 import styles from '../../styles/blog.module.css'
 import RelatedPosts from '../../components/RelatedPosts.astro';
@@ -48,28 +41,15 @@ if (!post) {
   throw new Error(`Post not found. slug: ${slug}`)
 }
 
-const [blocks, allPosts, rankedPosts, recentPosts, tags] =
+const [blocks, allPosts] =
   await Promise.all([
     getAllBlocksByBlockId(post.PageId),
     getAllPosts(),
-    getRankedPosts(),
-    getPosts(5),
-    getAllTags(),
-    getPostsByTag(post.Tags[0]?.name, 6),
   ])
 
 // 読了時間を計算
 const postText = extractTextFromBlocks(blocks);
 const readingTime = calculateReadingTime(postText);
-
-// 目次用の見出しブロックを抽出 (h1, h2, h3)
-const tocHeadings = blocks.filter(
-  (block) =>
-    block.Type === 'heading_1' ||
-    block.Type === 'heading_2' ||
-    block.Type === 'heading_3'
-);
-console.log("tocHeadings:", JSON.stringify(tocHeadings, null, 2)); // デバッグ用
 
 const fileAtacchedBlocks = extractTargetBlocks('image', blocks)
   .concat(extractTargetBlocks('file', blocks))
@@ -246,12 +226,5 @@ const breadcrumbLd = {
         <PostRelativeLink prevPost={prevPost} nextPost={nextPost} />
       </footer>
     </div>
-  </div>
-
-  <div slot="aside" class="aside">
-    <TableOfContentsSidebar headings={tocHeadings} />
-    <BlogPostsLink heading="最新記事" posts={recentPosts} />
-    <BlogPostsLink heading="おすすめ記事" posts={rankedPosts} />
-    <BlogTagsLink heading="カテゴリー" tags={tags} />
   </div>
 </Layout>

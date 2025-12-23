@@ -1,0 +1,262 @@
+---
+import { getDatabase, getAllTags } from '../lib/notion/client.ts'
+import { getNavLink, filePath } from '../lib/blog-helpers.ts'
+import SearchButton from './SearchButton.astro'
+
+const database = await getDatabase()
+const tags = await getAllTags()
+
+let customIconURL: string | undefined
+if (database.Icon && database.Icon.Type === 'file' && database.Icon.Url) {
+  try {
+    customIconURL = filePath(new URL(database.Icon.Url))
+  } catch {
+    console.log('Invalid DB custom icon URL: ', database.Icon.Url)
+  }
+}
+
+// 主要なカテゴリーのみ表示（最大5つ）
+const mainTags = tags.slice(0, 5)
+---
+
+<header class="site-header">
+  <div class="header-container">
+    <a href={getNavLink('/')} class="logo">
+      {database.Icon && database.Icon.Type === 'emoji' && database.Icon.Emoji ? (
+        <span class="logo-icon">{database.Icon.Emoji}</span>
+      ) : database.Icon && database.Icon.Type === 'external' && database.Icon.Url ? (
+        <img src={database.Icon.Url} alt="Site icon" class="logo-icon" />
+      ) : database.Icon && database.Icon.Type === 'file' && customIconURL ? (
+        <img src={customIconURL} class="logo-icon" alt="Site icon" />
+      ) : null}
+      <span class="logo-text">{database.Title}</span>
+    </a>
+
+    <nav class="main-nav">
+      {mainTags.map((tag) => (
+        <a href={getNavLink(`/posts/tag/${tag.name}`)} class="nav-link">
+          {tag.name}
+        </a>
+      ))}
+    </nav>
+
+    <div class="header-actions">
+      <SearchButton />
+      <a href={getNavLink('/profile')} class="profile-link-header">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+      </a>
+      <button class="mobile-menu-toggle" aria-label="メニューを開く">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- モバイルメニュー -->
+  <nav class="mobile-nav">
+    {mainTags.map((tag) => (
+      <a href={getNavLink(`/posts/tag/${tag.name}`)} class="mobile-nav-link">
+        {tag.name}
+      </a>
+    ))}
+    <a href={getNavLink('/profile')} class="mobile-nav-link">
+      プロフィール
+    </a>
+  </nav>
+</header>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(253, 251, 247, 0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid #E8E2D9;
+  }
+
+  .header-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    color: #2D2A26;
+    font-weight: 700;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+  }
+
+  .logo:hover {
+    color: #E07A3D;
+  }
+
+  .logo-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 4px;
+    object-fit: contain;
+  }
+
+  .logo-icon:is(span) {
+    font-size: 1.25rem;
+    width: auto;
+    height: auto;
+  }
+
+  .main-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex-grow: 1;
+    justify-content: center;
+  }
+
+  .nav-link {
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    color: #5C5650;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .nav-link:hover {
+    background: #F5F0E8;
+    color: #E07A3D;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .header-actions :global(.search-button) {
+    padding: 0.5rem;
+    margin: 0;
+    background: transparent;
+    border-radius: 8px;
+  }
+
+  .header-actions :global(.search-button:hover) {
+    background: #F5F0E8;
+  }
+
+  .header-actions :global(.search-button span) {
+    display: none;
+  }
+
+  .profile-link-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    color: #5C5650;
+    transition: all 0.2s ease;
+  }
+
+  .profile-link-header:hover {
+    background: #F5F0E8;
+    color: #E07A3D;
+  }
+
+  .mobile-menu-toggle {
+    display: none;
+    padding: 0.5rem;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: #5C5650;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .mobile-menu-toggle:hover {
+    background: #F5F0E8;
+    color: #E07A3D;
+  }
+
+  .mobile-nav {
+    display: none;
+    flex-direction: column;
+    padding: 0.5rem 1rem 1rem;
+    border-top: 1px solid #E8E2D9;
+  }
+
+  .mobile-nav-link {
+    padding: 0.75rem 1rem;
+    color: #5C5650;
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+  }
+
+  .mobile-nav-link:hover {
+    background: #F5F0E8;
+    color: #E07A3D;
+  }
+
+  /* モバイル対応 */
+  @media (max-width: 768px) {
+    .main-nav {
+      display: none;
+    }
+
+    .profile-link-header {
+      display: none;
+    }
+
+    .mobile-menu-toggle {
+      display: flex;
+    }
+
+    .site-header.menu-open .mobile-nav {
+      display: flex;
+    }
+
+    .header-container {
+      padding: 0.75rem 1rem;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const header = document.querySelector('.site-header');
+    const toggle = document.querySelector('.mobile-menu-toggle');
+    
+    toggle?.addEventListener('click', () => {
+      header?.classList.toggle('menu-open');
+    });
+
+    // ページ遷移時にメニューを閉じる
+    document.querySelectorAll('.mobile-nav-link').forEach(link => {
+      link.addEventListener('click', () => {
+        header?.classList.remove('menu-open');
+      });
+    });
+  });
+</script>
+

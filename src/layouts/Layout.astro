@@ -5,8 +5,8 @@ import { getNavLink, getStaticFilePath, filePath } from '../lib/blog-helpers.ts'
 import '../styles/syntax-coloring.css'
 import GoogleAnalytics from '../components/GoogleAnalytics.astro'
 import SearchModal from '../components/SearchModal.astro'
-import SearchButton from '../components/SearchButton.astro'
-import ProfileSidebar from '../components/ProfileSidebar.astro'
+import Header from '../components/Header.astro'
+import Footer from '../components/Footer.astro'
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import type * as interfaces from '../lib/interfaces.ts'
 
@@ -48,11 +48,14 @@ if (database.Cover) {
 }
 
 let customIconURL: string | undefined
-if (database.Icon && database.Icon.Type === 'file' && database.Icon.Url) {
-  try {
-    customIconURL = filePath(new URL(database.Icon.Url))
-  } catch {
-    console.log('Invalid DB custom icon URL: ', database.Icon.Url)
+if (database.Icon && database.Icon.Type === 'file') {
+  const iconUrl = (database.Icon as { Url?: string }).Url
+  if (iconUrl) {
+    try {
+      customIconURL = filePath(new URL(iconUrl))
+    } catch {
+      console.log('Invalid DB custom icon URL: ', iconUrl)
+    }
   }
 }
 
@@ -104,72 +107,35 @@ if (profilePost?.FeaturedImage?.Url) {
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6921846261223866"
     crossorigin="anonymous"></script>
     <GoogleAnalytics trackingId={PUBLIC_GA_TRACKING_ID} />
-    <div class="container">
-      <div>
-        <main>
-          {
-            coverImageURL && (
-              <div class="cover">
-                <img src={coverImageURL} alt={`${database.Title} のカバー画像`} loading="lazy" />
-              </div>
-            )
-          }
-          <div class="content">
-            <header>
-              <h1>
-                <a href={getNavLink('/')}>
-                  {
-                    database.Icon && database.Icon.Type === 'emoji' && database.Icon.Emoji ? (
-                      <>
-                        <span>{database.Icon.Emoji}</span>
-                        {database.Title}
-                      </>
-                    ) : database.Icon && database.Icon.Type === 'external' && database.Icon.Url ? (
-                      <>
-                        <img src={database.Icon.Url} alt="Site icon image" />
-                        {database.Title}
-                      </>
-                    ) : database.Icon && database.Icon.Type === 'file' && customIconURL ? (
-                      <>
-                        <img
-                          src={customIconURL}
-                          class="custom-icon"
-                          alt="Site icon image"
-                        />
-                        {database.Title}
-                      </>
-                    ) : (
-                      database.Title
-                    )
-                  }
-                </a>
+    
+    <Header />
+    
+    <div class="site-container">
+      {
+        coverImageURL && (
+          <div class="hero-cover">
+            <img src={coverImageURL} alt={`${database.Title} のカバー画像`} loading="eager" />
+            <div class="hero-overlay">
+              <h1 class="hero-title">
+                {database.Icon && database.Icon.Type === 'emoji' && (database.Icon as { Emoji?: string }).Emoji && (
+                  <span class="hero-icon">{(database.Icon as { Emoji: string }).Emoji}</span>
+                )}
+                {database.Title}
               </h1>
-              <div class="description">
-                {database.Description}
-              </div>
-            </header>
-
-            <slot name="main" />
-
-            <footer>
-              <div>
-                <span>Powered by&nbsp;</span>
-                <a href="https://github.com/otoyo/astro-notion-blog"
-                  >astro-notion-blog</a
-                >
-              </div>
-            </footer>
+              {database.Description && (
+                <p class="hero-description">{database.Description}</p>
+              )}
+            </div>
           </div>
-        </main>
-
-        <aside>
-          <SearchButton />
-          <ProfileSidebar profileIconURL={profileIconURL} />
-          <slot name="aside" />
-        </aside>
-      </div>
+        )
+      }
+      
+      <main class="main-content">
+        <slot name="main" />
+      </main>
     </div>
 
+    <Footer />
     <SearchModal />
     {
       ENABLE_LIGHTBOX && (
@@ -180,195 +146,85 @@ if (profilePost?.FeaturedImage?.Url) {
 </html>
 
 <style>
-  .container {
-    margin: 0 auto;
-    max-width: 1280px;
+  .site-container {
     min-height: 100vh;
     width: 100%;
   }
 
-  .container > div {
-    display: flex;
-    max-width: 1280px;
-    width: 100%;
-  }
-  @media (max-width: 640px) {
-    .container > div {
-      display: block;
-      width: 100%;
-    }
-  }
-
-  main {
-    flex: 1;
-    order: 2;
-    justify-content: space-between;
-    min-width: 0;
-    max-width: 100%;
-  }
-  @media (max-width: 640px) {
-    main {
-      order: 1;
-      width: 100%;
-      max-width: 100%;
-    }
-  }
-
-  aside {
-    order: 1;
-    width: 250px;
-    padding: 35px 20px;
-    background-color: #eee3c9;
+  /* ヒーローカバー画像 */
+  .hero-cover {
     position: relative;
-    height: auto;
-    flex-shrink: 0;
-  }
-  @media (max-width: 640px) {
-    aside {
-      order: 2;
-      width: 100%;
-    }
+    width: 100%;
+    height: 40vh;
+    min-height: 280px;
+    max-height: 400px;
+    overflow: hidden;
   }
 
-  div.cover {
-  }
-  div.cover img {
+  .hero-cover img {
     display: block;
     width: 100%;
-    height: 20vh;
+    height: 100%;
     object-fit: cover;
     object-position: center 60%;
   }
 
-  div.content {
-    padding: 20px 40px;
-    overflow-wrap: break-word;
-    word-wrap: break-word;
-    word-break: break-word;
-    min-width: 0;
-    width: 100%;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-  }
-  
-  div.content > * {
-    max-width: 100%;
-    box-sizing: border-box;
-    overflow-wrap: break-word;
-    word-wrap: break-word;
-    flex-shrink: 1;
-    min-width: 0;
-  }
-  
-  @media (max-width: 640px) {
-    div.content {
-      padding-top: 0;
-      padding-bottom: 0;
-      padding-left: 24px;
-      padding-right: 24px;
-      width: 100%;
-      max-width: 100%;
-    }
-    
-    div.content > * {
-      width: auto;
-      max-width: none;
-      margin-left: 0;
-      margin-right: 0;
-    }
-  }
-  @media (max-width: 410px) {
-    div.content {
-      padding-left: 16px;
-      padding-right: 16px;
-    }
-  }
-  @media (max-width: 320px) {
-    div.content {
-      padding-left: 12px;
-      padding-right: 12px;
-    }
+  .hero-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 3rem 2rem 2rem;
+    background: linear-gradient(to top, rgba(45, 42, 38, 0.85) 0%, rgba(45, 42, 38, 0.4) 60%, transparent 100%);
+    color: #fff;
   }
 
-  main header {
-    padding: 20px 0 20px;
-  }
-  main header h1 {
+  .hero-title {
+    margin: 0;
+    font-size: 2rem;
     font-weight: 700;
-    color: #333;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    max-width: 1200px;
+    margin: 0 auto;
   }
-  main header h1 a {
-    display: block;
-    color: inherit;
-  }
-  main header h1 a:hover {
-    color: inherit;
-  }
-  main header h1 a span,
-  main header h1 a img {
-    display: inline-block;
-    font-size: 1.1em;
-  }
-  main header h1 a span {
+
+  .hero-icon {
     margin-right: 0.3em;
-    margin-left: -0.1rem;
-  }
-  main header h1 a img {
-    width: 1.2em;
-    height: 1.2em;
-    margin-right: 0.2em;
-    margin-left: -0.3rem;
-    vertical-align: sub;
-  }
-  main header h1 a img.custom-icon {
-    border-radius: var(--radius);
   }
 
-  main header div.description {
-    padding: 0.3rem 0 0.6rem;
-    font-size: 0.95rem;
+  .hero-description {
+    margin: 0.5rem auto 0;
+    font-size: 1rem;
+    opacity: 0.9;
+    max-width: 1200px;
   }
 
-  main footer {
-    margin: 30px 0 10px;
-    text-align: center;
-    font-size: 0.6rem;
-  }
   @media (max-width: 640px) {
-    main footer {
-      margin: 0 auto 30px;
+    .hero-cover {
+      height: 30vh;
+      min-height: 200px;
+    }
+
+    .hero-title {
+      font-size: 1.5rem;
+    }
+
+    .hero-overlay {
+      padding: 2rem 1rem 1.5rem;
     }
   }
-  main footer span {
-    color: #777;
-  }
-  main footer a {
-    color: inherit;
-    text-decoration: underline;
+
+  /* メインコンテンツエリア */
+  .main-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
   }
 
-  .profile-link {
-    margin: 20px 0;
-  }
-  .profile-link a {
-    display: flex;
-    align-items: center;
-    color: inherit;
-    text-decoration: none;
-  }
-  .profile-link a:hover {
-    text-decoration: underline;
-  }
-  .profile-link img.profile-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    margin-right: 10px;
-    object-fit: cover;
-  }
-  .profile-link span {
-    font-size: 0.9rem;
+  @media (max-width: 640px) {
+    .main-content {
+      padding: 1.5rem 1rem;
+    }
   }
 </style>
 
@@ -379,17 +235,21 @@ if (profilePost?.FeaturedImage?.Url) {
     --gap: 1rem;
     --gap-double: 2rem;
 
-    --bg: #EEEEEE; /* bodyのBG */
-    --fg: #333333; /* 基本文字色 */
-    --accents-1: #555555; /* リンク色 */
-    --accents-2: #555555;
-    --accents-3: #555555;
-    --geist-foreground: #000000;
+    /* ウォームカラーパレット */
+    --bg: #FDFBF7;           /* クリームホワイト */
+    --fg: #2D2A26;           /* ダークブラウン */
+    --accents-1: #E07A3D;    /* テラコッタ（メインアクセント） */
+    --accents-2: #8B7355;    /* モカ（サブテキスト） */
+    --accents-3: #5C5650;    /* グレーブラウン */
+    --border-color: #E8E2D9; /* サンド */
+    --card-bg: #FFFFFF;      /* カード背景 */
+    --hover-bg: #F5F0E8;     /* ホバー背景 */
+    --geist-foreground: #2D2A26;
     --geist-success: #669900;
 
-    --radius: 4px;
+    --radius: 8px;
 
-    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    --font-sans: 'M PLUS Rounded 1c', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
       'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
       'Helvetica Neue', sans-serif;
     --font-mono: SFMono-Regular, Menlo, Consolas, 'PT Mono', 'Liberation Mono',

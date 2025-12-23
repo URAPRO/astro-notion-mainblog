@@ -1,0 +1,327 @@
+---
+import { getDatabase, getPosts, getRankedPosts, getAllTags, getPostBySlug } from '../lib/notion/client.ts'
+import { getNavLink, getPostLink, getTagLink, filePath } from '../lib/blog-helpers.ts'
+
+const database = await getDatabase()
+const recentPosts = await getPosts(5)
+const rankedPosts = await getRankedPosts()
+const tags = await getAllTags()
+const profilePost = await getPostBySlug('profile')
+
+// プロフィール画像
+let profileIconURL = ''
+if (profilePost?.FeaturedImage?.Url) {
+  try {
+    const url = new URL(profilePost.FeaturedImage.Url)
+    profileIconURL = filePath(url)
+  } catch {
+    console.log('Invalid profile image URL')
+  }
+}
+---
+
+<footer class="site-footer">
+  <div class="footer-container">
+    <!-- プロフィールセクション -->
+    <div class="footer-section footer-profile">
+      <div class="profile-header">
+        {profileIconURL && (
+          <img src={profileIconURL} alt="Profile" class="profile-avatar" />
+        )}
+        <div class="profile-info">
+          <h3 class="profile-name">あでぃ</h3>
+          <p class="profile-title">Maker & Engineer</p>
+        </div>
+      </div>
+      <p class="profile-description">
+        レーザーカッターとWeb技術で、ものづくりの可能性を探求中。
+      </p>
+      <div class="social-links">
+        <a href="https://x.com/tk_adio" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+          </svg>
+        </a>
+        <a href="https://www.instagram.com/adio29/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+          </svg>
+        </a>
+        <a href="https://github.com/adio" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+          </svg>
+        </a>
+      </div>
+      <a href={getNavLink('/profile')} class="profile-detail-link">
+        プロフィール詳細 →
+      </a>
+    </div>
+
+    <!-- 最新記事セクション -->
+    <div class="footer-section">
+      <h3 class="footer-heading">最新記事</h3>
+      <ul class="footer-posts">
+        {recentPosts.map((post) => (
+          <li>
+            <a href={getPostLink(post)}>
+              {post.Icon?.Type === 'emoji' && <span class="post-emoji">{post.Icon.Emoji}</span>}
+              <span class="post-title">{post.Title}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    <!-- おすすめ記事セクション -->
+    {rankedPosts.length > 0 && (
+      <div class="footer-section">
+        <h3 class="footer-heading">おすすめ記事</h3>
+        <ul class="footer-posts">
+          {rankedPosts.slice(0, 5).map((post) => (
+            <li>
+              <a href={getPostLink(post)}>
+                {post.Icon?.Type === 'emoji' && <span class="post-emoji">{post.Icon.Emoji}</span>}
+                <span class="post-title">{post.Title}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
+
+    <!-- カテゴリーセクション -->
+    <div class="footer-section">
+      <h3 class="footer-heading">カテゴリー</h3>
+      <div class="footer-tags">
+        {tags.map((tag) => (
+          <a href={getTagLink(tag.name)} class="footer-tag">
+            {tag.name}
+          </a>
+        ))}
+      </div>
+    </div>
+  </div>
+
+  <!-- コピーライト -->
+  <div class="footer-bottom">
+    <p>
+      © {new Date().getFullYear()} {database.Title}. 
+      Powered by <a href="https://github.com/otoyo/astro-notion-blog" target="_blank" rel="noopener noreferrer">astro-notion-blog</a>
+    </p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    background: linear-gradient(180deg, #F5F0E8 0%, #EDE5DA 100%);
+    border-top: 1px solid #E8E2D9;
+    margin-top: 4rem;
+  }
+
+  .footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 2rem;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2rem;
+  }
+
+  .footer-section {
+    min-width: 0;
+  }
+
+  /* プロフィールセクション */
+  .footer-profile {
+    grid-column: span 1;
+  }
+
+  .profile-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .profile-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .profile-name {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #2D2A26;
+  }
+
+  .profile-title {
+    margin: 0;
+    font-size: 0.8rem;
+    color: #8B7355;
+  }
+
+  .profile-description {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: #5C5650;
+    margin: 0 0 0.75rem;
+  }
+
+  .social-links {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .social-links a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.8);
+    color: #5C5650;
+    transition: all 0.2s ease;
+  }
+
+  .social-links a:hover {
+    background: #E07A3D;
+    color: #fff;
+    transform: translateY(-2px);
+  }
+
+  .profile-detail-link {
+    font-size: 0.85rem;
+    color: #E07A3D;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+  }
+
+  .profile-detail-link:hover {
+    color: #C25A2E;
+  }
+
+  /* セクション見出し */
+  .footer-heading {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #2D2A26;
+    margin: 0 0 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #E07A3D;
+  }
+
+  /* 記事リスト */
+  .footer-posts {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .footer-posts li {
+    margin-bottom: 0.4rem;
+  }
+
+  .footer-posts a {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: #5C5650;
+    text-decoration: none;
+    line-height: 1.4;
+    padding: 0.25rem 0;
+    transition: color 0.2s ease;
+  }
+
+  .footer-posts a:hover {
+    color: #E07A3D;
+  }
+
+  .post-emoji {
+    flex-shrink: 0;
+    font-size: 0.9rem;
+  }
+
+  .post-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* タグリスト */
+  .footer-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .footer-tag {
+    padding: 0.3rem 0.6rem;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 4px;
+    font-size: 0.8rem;
+    color: #5C5650;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .footer-tag:hover {
+    background: #E07A3D;
+    color: #fff;
+  }
+
+  /* コピーライト */
+  .footer-bottom {
+    border-top: 1px solid #E8E2D9;
+    padding: 1rem 1.5rem;
+    text-align: center;
+  }
+
+  .footer-bottom p {
+    margin: 0;
+    font-size: 0.75rem;
+    color: #8B7355;
+  }
+
+  .footer-bottom a {
+    color: #E07A3D;
+    text-decoration: none;
+  }
+
+  .footer-bottom a:hover {
+    text-decoration: underline;
+  }
+
+  /* レスポンシブ */
+  @media (max-width: 1024px) {
+    .footer-container {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .footer-profile {
+      grid-column: span 2;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .footer-container {
+      grid-template-columns: 1fr;
+      padding: 2rem 1rem 1.5rem;
+      gap: 1.5rem;
+    }
+
+    .footer-profile {
+      grid-column: span 1;
+    }
+  }
+</style>
+
