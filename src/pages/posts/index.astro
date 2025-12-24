@@ -1,11 +1,12 @@
 ---
-import { getAllBlogPosts } from '../../lib/notion/client.ts'
+import { getAllBlogPosts, getAllTags } from '../../lib/notion/client.ts'
 import Layout from '../../layouts/Layout.astro'
 import NoContents from '../../components/NoContents.astro'
 import PostFeaturedImage from '../../components/PostFeaturedImage.astro'
 import { getPostLink, getDateStr } from '../../lib/blog-helpers.ts'
 
 const allPosts = await getAllBlogPosts()
+const allTags = await getAllTags()
 
 // プラットフォームを判定するヘルパー
 const getPlatform = (post: (typeof allPosts)[0]) => {
@@ -19,6 +20,37 @@ const getPlatform = (post: (typeof allPosts)[0]) => {
 const blogCount = allPosts.filter((p) => getPlatform(p) === 'blog').length
 const noteCount = allPosts.filter((p) => getPlatform(p) === 'note').length
 const zennCount = allPosts.filter((p) => getPlatform(p) === 'zenn').length
+
+// プラットフォーム別のタグ件数を計算
+const getTagCountByPlatform = (tagName: string, platform: string) => {
+  return allPosts.filter((post) => {
+    const postPlatform = getPlatform(post)
+    const hasTag = post.Tags?.some((t) => t.name === tagName)
+    return postPlatform === platform && hasTag
+  }).length
+}
+
+// タグデータをJSONとして渡す用
+const tagsByPlatform = {
+  blog: allTags
+    .map((tag) => ({
+      name: tag.name,
+      count: getTagCountByPlatform(tag.name, 'blog'),
+    }))
+    .filter((t) => t.count > 0),
+  note: allTags
+    .map((tag) => ({
+      name: tag.name,
+      count: getTagCountByPlatform(tag.name, 'note'),
+    }))
+    .filter((t) => t.count > 0),
+  zenn: allTags
+    .map((tag) => ({
+      name: tag.name,
+      count: getTagCountByPlatform(tag.name, 'zenn'),
+    }))
+    .filter((t) => t.count > 0),
+}
 
 const platformConfig = {
   blog: { icon: '🏠', label: 'Blog', color: '#E07A3D' },
@@ -46,7 +78,7 @@ const LOAD_MORE_COUNT = 9
 
     <!-- フィルターチップ（スティッキー） -->
     <div class="filter-container">
-      <div class="filter-chips">
+      <div class="filter-chips" id="platform-chips">
         <button class="filter-chip active" data-filter="all">
           すべて <span class="chip-count">{allPosts.length}</span>
         </button>
@@ -66,6 +98,13 @@ const LOAD_MORE_COUNT = 9
           >
         </button>
       </div>
+
+      <!-- タグフィルター（プラットフォーム選択時に表示） -->
+      <div class="tag-filter-row" id="tag-filter-row">
+        <div class="tag-chips" id="tag-chips">
+          <!-- JSで動的に生成 -->
+        </div>
+      </div>
     </div>
 
     {
@@ -77,12 +116,14 @@ const LOAD_MORE_COUNT = 9
             const platform = getPlatform(post)
             const config = platformConfig[platform]
             const isHidden = index >= INITIAL_COUNT
+            const tagNames = post.Tags?.map((t) => t.name).join(',') || ''
             return (
               <a
                 href={getPostLink(post)}
                 target={post.ExternalLink ? '_blank' : undefined}
                 class={`post-card ${isHidden ? 'hidden' : ''}`}
                 data-platform={platform}
+                data-tags={tagNames}
                 data-index={index}
               >
                 {platform !== 'blog' && (
@@ -130,29 +171,80 @@ const LOAD_MORE_COUNT = 9
   </div>
 </Layout>
 
-<script define:vars={{ INITIAL_COUNT, LOAD_MORE_COUNT }}>
+<script define:vars={{ INITIAL_COUNT, LOAD_MORE_COUNT, tagsByPlatform }}>
   document.addEventListener('DOMContentLoaded', () => {
-    const chips = document.querySelectorAll('.filter-chip')
+    const platformChips = document.querySelectorAll(
+      '#platform-chips .filter-chip'
+    )
+    const tagChipsContainer = document.getElementById('tag-chips')
+    const tagFilterRow = document.getElementById('tag-filter-row')
     const cards = document.querySelectorAll('.post-card')
     const loadTrigger = document.getElementById('load-trigger')
     const endMessage = document.getElementById('end-message')
 
-    let currentFilter = 'all'
+    let currentPlatform = 'all'
+    let currentTag = 'all'
     let visibleCount = INITIAL_COUNT
 
-    // フィルター機能
-    chips.forEach((chip) => {
+    // プラットフォームフィルター
+    platformChips.forEach((chip) => {
       chip.addEventListener('click', () => {
-        // アクティブ状態の切り替え
-        chips.forEach((c) => c.classList.remove('active'))
+        platformChips.forEach((c) => c.classList.remove('active'))
         chip.classList.add('active')
 
-        currentFilter = chip.dataset.filter
+        currentPlatform = chip.dataset.filter
+        currentTag = 'all'
         visibleCount = INITIAL_COUNT
 
+        updateTagChips()
         updateVisibility()
       })
     })
+
+    // タグチップを更新
+    function updateTagChips() {
+      if (currentPlatform === 'all') {
+        tagFilterRow.classList.remove('visible')
+        tagChipsContainer.innerHTML = ''
+        return
+      }
+
+      const tags = tagsByPlatform[currentPlatform] || []
+
+      if (tags.length === 0) {
+        tagFilterRow.classList.remove('visible')
+        tagChipsContainer.innerHTML = ''
+        return
+      }
+
+      tagFilterRow.classList.add('visible')
+
+      tagChipsContainer.innerHTML = `
+        <button class="tag-chip active" data-tag="all">すべて</button>
+        ${tags
+          .map(
+            (tag) => `
+          <button class="tag-chip" data-tag="${tag.name}">
+            ${tag.name} <span class="tag-count">${tag.count}</span>
+          </button>
+        `
+          )
+          .join('')}
+      `
+
+      // タグチップのイベント
+      document.querySelectorAll('.tag-chip').forEach((chip) => {
+        chip.addEventListener('click', () => {
+          document
+            .querySelectorAll('.tag-chip')
+            .forEach((c) => c.classList.remove('active'))
+          chip.classList.add('active')
+          currentTag = chip.dataset.tag
+          visibleCount = INITIAL_COUNT
+          updateVisibility()
+        })
+      })
+    }
 
     // 表示更新
     function updateVisibility() {
@@ -161,8 +253,12 @@ const LOAD_MORE_COUNT = 9
 
       cards.forEach((card) => {
         const platform = card.dataset.platform
-        const matchesFilter =
-          currentFilter === 'all' || platform === currentFilter
+        const tags = card.dataset.tags ? card.dataset.tags.split(',') : []
+
+        const matchesPlatform =
+          currentPlatform === 'all' || platform === currentPlatform
+        const matchesTag = currentTag === 'all' || tags.includes(currentTag)
+        const matchesFilter = matchesPlatform && matchesTag
 
         if (matchesFilter) {
           totalFiltered++
@@ -251,10 +347,10 @@ const LOAD_MORE_COUNT = 9
     color: var(--accents-2);
   }
 
-  /* フィルターチップ */
+  /* フィルターコンテナ */
   .filter-container {
     position: sticky;
-    top: 70px;
+    top: 55px;
     z-index: 50;
     background: var(--bg);
     padding: 0.75rem 0;
@@ -301,6 +397,59 @@ const LOAD_MORE_COUNT = 9
   .chip-count {
     font-size: 0.75rem;
     opacity: 0.8;
+  }
+
+  /* タグフィルター行 */
+  .tag-filter-row {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: all 0.3s ease;
+  }
+
+  .tag-filter-row.visible {
+    max-height: 100px;
+    opacity: 1;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px dashed var(--border-color);
+  }
+
+  .tag-chips {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+
+  :global(.tag-chip) {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.35rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--card-bg);
+    color: var(--fg);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  :global(.tag-chip:hover) {
+    border-color: var(--accents-1);
+    background: var(--hover-bg);
+  }
+
+  :global(.tag-chip.active) {
+    background: var(--accents-1);
+    border-color: transparent;
+    color: #fff;
+  }
+
+  :global(.tag-count) {
+    font-size: 0.7rem;
+    opacity: 0.7;
   }
 
   /* グリッドレイアウト */
@@ -482,7 +631,7 @@ const LOAD_MORE_COUNT = 9
     }
 
     .filter-container {
-      top: 60px;
+      top: 50px;
       padding: 0.5rem 0;
       margin-bottom: 1rem;
     }
@@ -498,6 +647,22 @@ const LOAD_MORE_COUNT = 9
     .filter-chip {
       padding: 0.4rem 0.75rem;
       font-size: 0.8rem;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .tag-filter-row.visible {
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
+    }
+
+    .tag-chips {
+      overflow-x: auto;
+      flex-wrap: nowrap;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    :global(.tag-chip) {
       white-space: nowrap;
       flex-shrink: 0;
     }
