@@ -62,6 +62,14 @@ const platformConfig = {
 // 初期表示件数
 const INITIAL_COUNT = 12
 const LOAD_MORE_COUNT = 9
+
+// 7日以内かどうかを判定
+const isNew = (date: string) => {
+  const postDate = new Date(date)
+  const now = new Date()
+  const diffDays = (now.getTime() - postDate.getTime()) / (1000 * 60 * 60 * 24)
+  return diffDays <= 7
+}
 ---
 
 <Layout
@@ -135,6 +143,7 @@ const LOAD_MORE_COUNT = 9
                     <span class="badge-label">{config.label}</span>
                   </div>
                 )}
+                {isNew(post.Date) && <div class="new-badge">NEW</div>}
                 <div class="post-image">
                   <PostFeaturedImage post={post} enableLink={false} />
                 </div>
@@ -471,7 +480,7 @@ const LOAD_MORE_COUNT = 9
     flex-direction: column;
     background: var(--card-bg);
     border-radius: 12px;
-    overflow: hidden;
+    overflow: visible;
     text-decoration: none;
     color: inherit;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -479,6 +488,36 @@ const LOAD_MORE_COUNT = 9
     position: relative;
     opacity: 1;
     transform: scale(1);
+  }
+
+  /* カードホバー時のパルスリング */
+  .post-card::before {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    border-radius: 16px;
+    border: 2px solid var(--accents-1);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+
+  .post-card:hover::before {
+    animation: card-pulse 1.5s ease-out infinite;
+  }
+
+  @keyframes card-pulse {
+    0% {
+      opacity: 0.6;
+      transform: scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(1.03);
+    }
   }
 
   .post-card.hidden {
@@ -490,9 +529,12 @@ const LOAD_MORE_COUNT = 9
   }
 
   .post-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-    border-color: var(--accents-1);
+    transform: translateY(-4px);
+    box-shadow:
+      0 8px 24px rgba(0, 0, 0, 0.1),
+      0 0 0 2px var(--accents-1),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+    border-color: transparent;
   }
 
   .post-card:hover .post-image :global(img) {
@@ -519,6 +561,37 @@ const LOAD_MORE_COUNT = 9
 
   .badge-icon {
     font-size: 0.85rem;
+  }
+
+  /* NEW バッジ */
+  .new-badge {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    z-index: 10;
+    padding: 0.25rem 0.5rem;
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    border-radius: 4px;
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    box-shadow: 0 2px 8px rgba(238, 90, 36, 0.4);
+    animation: new-badge-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes new-badge-pulse {
+    0%,
+    100% {
+      box-shadow: 0 2px 8px rgba(238, 90, 36, 0.4);
+      transform: scale(1);
+    }
+    50% {
+      box-shadow:
+        0 2px 16px rgba(238, 90, 36, 0.7),
+        0 0 20px rgba(255, 107, 107, 0.4);
+      transform: scale(1.05);
+    }
   }
 
   .post-image {

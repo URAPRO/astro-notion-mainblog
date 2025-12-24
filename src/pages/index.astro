@@ -54,6 +54,14 @@ const platformConfig = {
   zenn: { icon: '💻', label: 'Zenn', color: '#3EA8FF' },
   external: { icon: '🔗', label: 'External', color: '#888' },
 }
+
+// 7日以内かどうかを判定
+const isNew = (date: string) => {
+  const postDate = new Date(date)
+  const now = new Date()
+  const diffDays = (now.getTime() - postDate.getTime()) / (1000 * 60 * 60 * 24)
+  return diffDays <= 7
+}
 ---
 
 <Layout
@@ -98,6 +106,7 @@ const platformConfig = {
                       {platformConfig.blog.label}
                     </span>
                   </div>
+                  {isNew(featuredBlog.Date) && <div class="new-badge">NEW</div>}
                   <div class="featured-image">
                     <PostFeaturedImage post={featuredBlog} enableLink={false} />
                   </div>
@@ -153,6 +162,7 @@ const platformConfig = {
                       {platformConfig.note.label}
                     </span>
                   </div>
+                  {isNew(featuredNote.Date) && <div class="new-badge">NEW</div>}
                   <div class="featured-image">
                     <PostFeaturedImage post={featuredNote} enableLink={false} />
                   </div>
@@ -208,6 +218,7 @@ const platformConfig = {
                       {platformConfig.zenn.label}
                     </span>
                   </div>
+                  {isNew(featuredZenn.Date) && <div class="new-badge">NEW</div>}
                   <div class="featured-image">
                     <PostFeaturedImage post={featuredZenn} enableLink={false} />
                   </div>
@@ -255,6 +266,9 @@ const platformConfig = {
                       </span>
                       <span class="post-item-title">{post.Title}</span>
                       <span class="post-item-meta">
+                        {isNew(post.Date) && (
+                          <span class="new-badge-small">NEW</span>
+                        )}
                         <span
                           class="post-item-platform"
                           style={`--platform-color: ${config.color}`}
@@ -345,7 +359,7 @@ const platformConfig = {
     flex: 1;
     background: var(--card-bg);
     border-radius: 12px;
-    overflow: hidden;
+    overflow: visible;
     text-decoration: none;
     color: inherit;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -353,10 +367,43 @@ const platformConfig = {
     position: relative;
   }
 
+  /* カードホバー時のパルスリング */
+  .featured-card::before {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    border-radius: 16px;
+    border: 2px solid var(--platform-color, var(--accents-1));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+
+  .featured-card:hover::before {
+    animation: card-pulse 1.5s ease-out infinite;
+  }
+
+  @keyframes card-pulse {
+    0% {
+      opacity: 0.6;
+      transform: scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(1.03);
+    }
+  }
+
   .featured-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-    border-color: var(--platform-color, var(--accents-1));
+    transform: translateY(-4px);
+    box-shadow:
+      0 8px 24px rgba(0, 0, 0, 0.1),
+      0 0 0 2px var(--platform-color, var(--accents-1)),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+    border-color: transparent;
   }
 
   .featured-card:hover .featured-image :global(img) {
@@ -387,6 +434,59 @@ const platformConfig = {
 
   .platform-label {
     display: inline;
+  }
+
+  /* NEW バッジ - カード用 */
+  .new-badge {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    z-index: 10;
+    padding: 0.25rem 0.5rem;
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    border-radius: 4px;
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    box-shadow: 0 2px 8px rgba(238, 90, 36, 0.4);
+    animation: new-badge-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes new-badge-pulse {
+    0%,
+    100% {
+      box-shadow: 0 2px 8px rgba(238, 90, 36, 0.4);
+      transform: scale(1);
+    }
+    50% {
+      box-shadow:
+        0 2px 16px rgba(238, 90, 36, 0.7),
+        0 0 20px rgba(255, 107, 107, 0.4);
+      transform: scale(1.05);
+    }
+  }
+
+  /* NEW バッジ - リスト用（小さめ） */
+  .new-badge-small {
+    padding: 0.1rem 0.3rem;
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    border-radius: 3px;
+    color: #fff;
+    font-size: 0.5rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    animation: new-badge-pulse-small 2s ease-in-out infinite;
+  }
+
+  @keyframes new-badge-pulse-small {
+    0%,
+    100% {
+      box-shadow: none;
+    }
+    50% {
+      box-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+    }
   }
 
   .featured-image {
@@ -466,10 +566,42 @@ const platformConfig = {
     flex: 1;
     display: flex;
     border-bottom: 1px solid var(--border-color);
+    position: relative;
   }
 
   .post-item:last-child {
     border-bottom: none;
+  }
+
+  /* リストアイテムホバー時のパルスリング */
+  .post-item::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border-radius: 8px;
+    border: 2px solid var(--accents-1);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .post-item:hover::before {
+    animation: list-item-pulse 1.5s ease-out infinite;
+  }
+
+  @keyframes list-item-pulse {
+    0% {
+      opacity: 0.5;
+      transform: scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(1.01);
+    }
   }
 
   .post-item-link {
@@ -482,6 +614,8 @@ const platformConfig = {
     transition: background 0.2s ease;
     box-sizing: border-box;
     width: 100%;
+    position: relative;
+    z-index: 2;
   }
 
   .post-item-link:hover {
