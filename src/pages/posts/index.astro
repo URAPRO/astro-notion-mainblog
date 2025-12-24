@@ -1,79 +1,319 @@
 ---
 import { NUMBER_OF_POSTS_PER_PAGE } from '../../server-constants.ts'
-import {
-  getAllBlogPosts,
-  getPosts,
-  getRankedPosts,
-  getAllTags,
-} from '../../lib/notion/client.ts'
+import { getAllBlogPosts } from '../../lib/notion/client.ts'
 import Layout from '../../layouts/Layout.astro'
 import NoContents from '../../components/NoContents.astro'
-import PostDate from '../../components/PostDate.astro'
-import PostUpdateDate from '../../components/PostUpdateDate.astro'
-import PostTags from '../../components/PostTags.astro'
-import PostTitle from '../../components/PostTitle.astro'
 import PostFeaturedImage from '../../components/PostFeaturedImage.astro'
 import Pagination from '../../components/Pagination.astro'
-import BlogPostsLink from '../../components/BlogPostsLink.astro'
-import BlogTagsLink from '../../components/BlogTagsLink.astro'
-import styles from '../../styles/blog.module.css'
-import { getPostLink } from '../../lib/blog-helpers';
+import { getPostLink, getDateStr } from '../../lib/blog-helpers.ts'
 
-const [allPosts, recentPosts, rankedPosts, tags] = await Promise.all([
-  getAllBlogPosts(),
-  getPosts(5),
-  getRankedPosts(),
-  getAllTags(),
-])
+const allPosts = await getAllBlogPosts()
 
 // 内部記事のみ抽出
 const internalAllPosts = allPosts.filter((post) => !post.ExternalLink)
 
-const numberOfPages = Math.floor(internalAllPosts.length / NUMBER_OF_POSTS_PER_PAGE) + (internalAllPosts.length % NUMBER_OF_POSTS_PER_PAGE > 0 ? 1 : 0)
+const numberOfPages =
+  Math.floor(internalAllPosts.length / NUMBER_OF_POSTS_PER_PAGE) +
+  (internalAllPosts.length % NUMBER_OF_POSTS_PER_PAGE > 0 ? 1 : 0)
 
 const posts = internalAllPosts.slice(0, NUMBER_OF_POSTS_PER_PAGE)
+
+// プラットフォームを判定するヘルパー
+const getPlatform = (post: (typeof allPosts)[0]) => {
+  if (!post.ExternalLink) return 'blog'
+  if (post.ExternalLink.includes('note.com')) return 'note'
+  if (post.ExternalLink.includes('zenn.dev')) return 'zenn'
+  return 'external'
+}
+
+const platformConfig = {
+  blog: { icon: '🏠', label: 'Blog', color: '#E07A3D' },
+  note: { icon: '✍️', label: 'note', color: '#41c9b4' },
+  zenn: { icon: '💻', label: 'Zenn', color: '#3EA8FF' },
+  external: { icon: '🔗', label: 'External', color: '#888' },
+}
 ---
 
-<Layout 
-  title="Posts" 
+<Layout
+  title="すべての記事"
   path="/posts"
-  description=""
+  description="urapro.dev のすべての記事一覧。Web開発技術、プログラミングTIPS、読書記録などを発信しています。"
   ogImage=""
 >
-  <div slot="main" class={`${styles.main} ${styles.postsPage}`}>
+  <div slot="main" class="posts-page">
+    <header class="page-header">
+      <h1 class="section-heading">すべての記事</h1>
+      <p class="page-description">全 {internalAllPosts.length} 件の記事</p>
+    </header>
+
     {
       posts.length === 0 ? (
         <NoContents contents={posts} />
       ) : (
-        posts.map((post) => (
-          <div class={styles.post} data-post-slug={post.Slug}>
-            <div class={styles.postDetail}>
-              <div class={styles.postDetailLeft}>
-                <PostFeaturedImage post={post} enableLink={false} />
-              </div>
-              <div class={styles.postDetailRight}>
-                <PostTitle post={post} enableLink={true} />
-                <div class={styles.postDate}>
-                  <PostDate post={post} />
-                  <PostUpdateDate post={post} />
+        <div class="posts-grid">
+          {posts.map((post) => {
+            const platform = getPlatform(post)
+            const config = platformConfig[platform]
+            return (
+              <a href={getPostLink(post)} class="post-card">
+                <div class="post-image">
+                  <PostFeaturedImage post={post} enableLink={false} />
                 </div>
-                <PostTags post={post} enableLink={true} />
-              </div>
-              <a class={styles.postLink} href={getPostLink(post)}></a>
-            </div>
-          </div>
-        ))
+                <div class="post-content">
+                  <h2 class="post-title">
+                    {post.Icon?.Type === 'emoji' && (
+                      <span class="post-icon">{post.Icon.Emoji}</span>
+                    )}
+                    {post.Title}
+                  </h2>
+                  <div class="post-meta">
+                    {post.Tags?.[0] && (
+                      <span class="post-tag">{post.Tags[0].name}</span>
+                    )}
+                    <span class="post-date">{getDateStr(post.Date)}</span>
+                  </div>
+                </div>
+              </a>
+            )
+          })}
+        </div>
       )
     }
 
-    <footer>
+    <footer class="page-footer">
       <Pagination currentPage={1} numberOfPages={numberOfPages} tag="" />
     </footer>
   </div>
-
-  <div slot="aside" class={styles.aside}>
-    <BlogPostsLink heading="最新記事" posts={recentPosts} />
-    <BlogPostsLink heading="おすすめ記事" posts={rankedPosts} />
-    <BlogTagsLink heading="カテゴリー" tags={tags} />
-  </div>
 </Layout>
+
+<style>
+  .posts-page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  .page-header {
+    margin-bottom: 2rem;
+  }
+
+  .section-heading {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--fg);
+    margin: 0 0 0.5rem;
+    padding-left: 1rem;
+    position: relative;
+  }
+
+  .section-heading::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 1.2em;
+    background: linear-gradient(180deg, var(--accents-1) 0%, #d4693a 100%);
+    border-radius: 2px;
+  }
+
+  .page-description {
+    margin: 0;
+    padding-left: 1rem;
+    font-size: 0.9rem;
+    color: var(--accents-2);
+  }
+
+  /* グリッドレイアウト */
+  .posts-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 1024px) {
+    .posts-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  /* カードスタイル */
+  .post-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--card-bg);
+    border-radius: 12px;
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid var(--border-color);
+  }
+
+  .post-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    border-color: var(--accents-1);
+  }
+
+  .post-card:hover .post-image :global(img) {
+    transform: scale(1.03);
+  }
+
+  .post-image {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    background: linear-gradient(135deg, #f5f0e8 0%, #ede5da 100%);
+  }
+
+  .post-image :global(.post-featured-image) {
+    aspect-ratio: 16 / 10;
+    height: 100%;
+  }
+
+  .post-image :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+
+  .post-content {
+    padding: 0.9rem 1rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .post-title {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--fg);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .post-icon {
+    margin-right: 0.2em;
+  }
+
+  .post-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: auto;
+  }
+
+  .post-tag {
+    padding: 0.15rem 0.5rem;
+    background: var(--hover-bg);
+    border-radius: 4px;
+    font-size: 0.7rem;
+    color: var(--accents-3);
+  }
+
+  .post-date {
+    font-size: 0.75rem;
+    color: var(--accents-2);
+  }
+
+  .page-footer {
+    margin-top: 2.5rem;
+    padding-top: 2rem;
+    border-top: 1px dashed var(--border-color);
+  }
+
+  /* モバイル対応 */
+  @media (max-width: 640px) {
+    .posts-page {
+      padding: 0 1rem;
+    }
+
+    .section-heading {
+      font-size: 1.3rem;
+    }
+
+    /* モバイルでは横長リスト形式 */
+    .posts-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      background: var(--card-bg);
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+    }
+
+    .post-card {
+      flex-direction: row;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.6rem 0.75rem;
+      border-radius: 0;
+      border: none;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .post-card:last-child {
+      border-bottom: none;
+    }
+
+    .post-card:hover {
+      transform: none;
+      box-shadow: none;
+      background: var(--hover-bg);
+    }
+
+    .post-image {
+      width: 80px;
+      height: 45px;
+      aspect-ratio: auto;
+      flex-shrink: 0;
+      border-radius: 4px;
+    }
+
+    .post-image :global(.post-featured-image) {
+      aspect-ratio: auto;
+      width: 100%;
+      height: 100%;
+    }
+
+    .post-content {
+      flex-grow: 1;
+      padding: 0;
+      min-width: 0;
+      gap: 0.15rem;
+    }
+
+    .post-title {
+      font-size: 0.85rem;
+      -webkit-line-clamp: 3;
+      margin: 0;
+    }
+
+    .post-meta {
+      flex-direction: row;
+      gap: 0.4rem;
+    }
+
+    .post-tag {
+      font-size: 0.6rem;
+      padding: 0.1rem 0.4rem;
+    }
+
+    .post-date {
+      font-size: 0.65rem;
+    }
+
+    .page-footer {
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+    }
+  }
+</style>

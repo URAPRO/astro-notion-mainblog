@@ -22,48 +22,93 @@ for (let i = startPage; i <= endPage; i++) {
 }
 ---
 
-<div class="pagination">
-  <a href={getPageLink(1, tag)} class={isFirstPage && 'inactive'}>&lt;&lt;</a>
+<nav class="pagination" aria-label="ページナビゲーション">
+  <a
+    href={getPageLink(1, tag)}
+    class={`pagination-btn pagination-nav ${isFirstPage ? 'inactive' : ''}`}
+    aria-label="最初のページへ"
+  >
+    «
+  </a>
   {
     pages.map((p: number) => (
-      <a href={getPageLink(p, tag)} class={p === currentPage && 'inactive'}>
+      <a
+        href={getPageLink(p, tag)}
+        class={`pagination-btn ${p === currentPage ? 'current' : ''}`}
+        aria-current={p === currentPage ? 'page' : undefined}
+      >
         {p}
       </a>
     ))
   }
-  <a href={getPageLink(numberOfPages, tag)} class={isLastPage && 'inactive'}
-    >&gt;&gt;</a
+  <a
+    href={getPageLink(numberOfPages, tag)}
+    class={`pagination-btn pagination-nav ${isLastPage ? 'inactive' : ''}`}
+    aria-label="最後のページへ"
   >
-</div>
+    »
+  </a>
+</nav>
 
 <style>
   .pagination {
     display: flex;
     width: 100%;
     margin: 0 auto;
-    color: var(--fg);
     justify-content: center;
     align-items: center;
+    gap: 0.5rem;
   }
-  .pagination a {
-    display: block;
-    width: 2.4rem;
-    height: 3rem;
-    margin: 0 0.4rem;
-    border-radius: var(--radius);
-    background: #f4f4f4;
-    color: inherit;
-    font-size: 0.85rem;
-    text-align: center;
-    text-decoration: underline;
+
+  .pagination-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.5rem;
+    height: 2.5rem;
+    padding: 0 0.75rem;
+    border-radius: 8px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    color: var(--fg);
+    font-size: 0.9rem;
     font-weight: 500;
-    line-height: 3rem;
-  }
-  .pagination a:hover:not(.inactive) {
-    background: #ddd;
-  }
-  .pagination a.inactive {
-    color: #999;
     text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .pagination-btn:hover:not(.inactive):not(.current) {
+    background: var(--hover-bg);
+    border-color: var(--accents-1);
+    transform: translateY(-1px);
+  }
+
+  .pagination-btn.current {
+    background: linear-gradient(135deg, var(--accents-1) 0%, #d4693a 100%);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(224, 122, 61, 0.3);
+  }
+
+  .pagination-btn.inactive {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  .pagination-nav {
+    font-size: 1rem;
+  }
+
+  @media (max-width: 640px) {
+    .pagination {
+      gap: 0.35rem;
+    }
+
+    .pagination-btn {
+      min-width: 2.2rem;
+      height: 2.2rem;
+      font-size: 0.8rem;
+      padding: 0 0.5rem;
+    }
   }
 </style>
