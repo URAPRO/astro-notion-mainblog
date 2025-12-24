@@ -1,31 +1,27 @@
 ---
+import { getAllBlogPosts } from '../lib/notion/client.ts'
 import {
-  getAllBlogPosts,
-  getPostBySlug,
-} from '../lib/notion/client.ts'
-import { getPostLink, getDateStr, getStaticFilePath, filePath } from '../lib/blog-helpers.ts'
+  getPostLink,
+  getDateStr,
+  getStaticFilePath,
+} from '../lib/blog-helpers.ts'
 import Layout from '../layouts/Layout.astro'
 import PostFeaturedImage from '../components/PostFeaturedImage.astro'
 import HeroSection from '../components/HeroSection.astro'
 
 const allPosts = await getAllBlogPosts()
 
-// プロフィール画像を取得
-const profilePost = await getPostBySlug('profile')
-let profileIconURL = getStaticFilePath('/default-og-image.png')
-if (profilePost?.FeaturedImage?.Url) {
-  try {
-    const url = new URL(profilePost.FeaturedImage.Url)
-    profileIconURL = filePath(url)
-  } catch {
-    console.log('Invalid profile image URL: ', profilePost.FeaturedImage.Url)
-  }
-}
+// プロフィール画像（public/images/profile-icon.webp に配置）
+const profileIconURL = getStaticFilePath('/images/profile-icon.webp')
 
 // プラットフォーム別に記事を分類
 const blogPosts = allPosts.filter((post) => !post.ExternalLink)
-const notePosts = allPosts.filter((post) => post.ExternalLink?.includes('note.com'))
-const zennPosts = allPosts.filter((post) => post.ExternalLink?.includes('zenn.dev'))
+const notePosts = allPosts.filter((post) =>
+  post.ExternalLink?.includes('note.com')
+)
+const zennPosts = allPosts.filter((post) =>
+  post.ExternalLink?.includes('zenn.dev')
+)
 
 // 各プラットフォームのFeatured記事（最新1件）
 const featuredBlog = blogPosts[0]
@@ -33,7 +29,11 @@ const featuredNote = notePosts[0]
 const featuredZenn = zennPosts[0]
 
 // Featured記事のSlug一覧
-const featuredSlugs = [featuredBlog?.Slug, featuredNote?.Slug, featuredZenn?.Slug].filter(Boolean)
+const featuredSlugs = [
+  featuredBlog?.Slug,
+  featuredNote?.Slug,
+  featuredZenn?.Slug,
+].filter(Boolean)
 
 // 右側の記事リスト（Featuredを除く）
 const rightPosts = allPosts
@@ -41,7 +41,7 @@ const rightPosts = allPosts
   .slice(0, 8)
 
 // プラットフォームを判定するヘルパー
-const getPlatform = (post: typeof allPosts[0]) => {
+const getPlatform = (post: (typeof allPosts)[0]) => {
   if (!post.ExternalLink) return 'blog'
   if (post.ExternalLink.includes('note.com')) return 'note'
   if (post.ExternalLink.includes('zenn.dev')) return 'zenn'
@@ -56,134 +56,224 @@ const platformConfig = {
 }
 ---
 
-<Layout 
-  title="Home" 
+<Layout
+  title="Home"
   path="/"
   description="urapro.dev – プログラマーUraによるWeb開発技術、プログラミングTIPS、読書記録を発信するブログ。実践的な情報であなたのスキルアップを応援します。"
   ogImage=""
 >
   <HeroSection slot="hero" profileIconURL={profileIconURL} />
-  
-  <div slot="main" class="home-content">  
+
+  <div slot="main" class="home-content">
     <section class="posts-section">
       <h2 class="section-heading">最新の記事</h2>
-      
+
       <div class="posts-grid">
         {/* 左側: 各プラットフォームのFeatured記事 */}
         <div class="featured-column">
           {/* Blog Featured */}
-          {featuredBlog && (
-            <a href={getPostLink(featuredBlog)} class="featured-card">
-              <div class="platform-badge" style={`--platform-color: ${platformConfig.blog.color}`}>
-                <span class="platform-icon">{platformConfig.blog.icon}</span>
-                <span class="platform-label">{platformConfig.blog.label}</span>
-              </div>
-              <div class="featured-image">
-                <PostFeaturedImage post={featuredBlog} enableLink={false} />
-              </div>
-              <div class="featured-content">
-                <h3 class="featured-title">
-                  {featuredBlog.Icon?.Type === 'emoji' && (
-                    <span class="post-icon">{featuredBlog.Icon.Emoji}</span>
-                  )}
-                  {featuredBlog.Title}
-                </h3>
-                <div class="featured-meta">
-                  <span class="featured-tag">{featuredBlog.Tags?.[0]?.name}</span>
-                  <span class="featured-date">{getDateStr(featuredBlog.Date)}</span>
+          {
+            featuredBlog && (
+              <>
+                <div
+                  class="mobile-platform-header"
+                  style={`--platform-color: ${platformConfig.blog.color}`}
+                >
+                  <span class="mobile-platform-icon">
+                    {platformConfig.blog.icon}
+                  </span>
+                  <span class="mobile-platform-name">
+                    {platformConfig.blog.label}
+                  </span>
                 </div>
-              </div>
-            </a>
-          )}
+                <a href={getPostLink(featuredBlog)} class="featured-card">
+                  <div
+                    class="platform-badge"
+                    style={`--platform-color: ${platformConfig.blog.color}`}
+                  >
+                    <span class="platform-icon">
+                      {platformConfig.blog.icon}
+                    </span>
+                    <span class="platform-label">
+                      {platformConfig.blog.label}
+                    </span>
+                  </div>
+                  <div class="featured-image">
+                    <PostFeaturedImage post={featuredBlog} enableLink={false} />
+                  </div>
+                  <div class="featured-content">
+                    <h3 class="featured-title">
+                      {featuredBlog.Icon?.Type === 'emoji' && (
+                        <span class="post-icon">{featuredBlog.Icon.Emoji}</span>
+                      )}
+                      {featuredBlog.Title}
+                    </h3>
+                    <div class="featured-meta">
+                      <span class="featured-tag">
+                        {featuredBlog.Tags?.[0]?.name}
+                      </span>
+                      <span class="featured-date">
+                        {getDateStr(featuredBlog.Date)}
+                      </span>
+                    </div>
+                  </div>
+                </a>
+              </>
+            )
+          }
 
           {/* note Featured */}
-          {featuredNote && (
-            <a href={getPostLink(featuredNote)} target="_blank" class="featured-card">
-              <div class="platform-badge" style={`--platform-color: ${platformConfig.note.color}`}>
-                <span class="platform-icon">{platformConfig.note.icon}</span>
-                <span class="platform-label">{platformConfig.note.label}</span>
-              </div>
-              <div class="featured-image">
-                <PostFeaturedImage post={featuredNote} enableLink={false} />
-              </div>
-              <div class="featured-content">
-                <h3 class="featured-title">
-                  {featuredNote.Icon?.Type === 'emoji' && (
-                    <span class="post-icon">{featuredNote.Icon.Emoji}</span>
-                  )}
-                  {featuredNote.Title}
-                </h3>
-                <div class="featured-meta">
-                  <span class="featured-tag">{featuredNote.Tags?.[0]?.name}</span>
-                  <span class="featured-date">{getDateStr(featuredNote.Date)}</span>
+          {
+            featuredNote && (
+              <>
+                <div
+                  class="mobile-platform-header"
+                  style={`--platform-color: ${platformConfig.note.color}`}
+                >
+                  <span class="mobile-platform-icon">
+                    {platformConfig.note.icon}
+                  </span>
+                  <span class="mobile-platform-name">
+                    {platformConfig.note.label}
+                  </span>
                 </div>
-              </div>
-            </a>
-          )}
+                <a
+                  href={getPostLink(featuredNote)}
+                  target="_blank"
+                  class="featured-card"
+                >
+                  <div
+                    class="platform-badge"
+                    style={`--platform-color: ${platformConfig.note.color}`}
+                  >
+                    <span class="platform-icon">
+                      {platformConfig.note.icon}
+                    </span>
+                    <span class="platform-label">
+                      {platformConfig.note.label}
+                    </span>
+                  </div>
+                  <div class="featured-image">
+                    <PostFeaturedImage post={featuredNote} enableLink={false} />
+                  </div>
+                  <div class="featured-content">
+                    <h3 class="featured-title">
+                      {featuredNote.Icon?.Type === 'emoji' && (
+                        <span class="post-icon">{featuredNote.Icon.Emoji}</span>
+                      )}
+                      {featuredNote.Title}
+                    </h3>
+                    <div class="featured-meta">
+                      <span class="featured-tag">
+                        {featuredNote.Tags?.[0]?.name}
+                      </span>
+                      <span class="featured-date">
+                        {getDateStr(featuredNote.Date)}
+                      </span>
+                    </div>
+                  </div>
+                </a>
+              </>
+            )
+          }
 
           {/* Zenn Featured */}
-          {featuredZenn && (
-            <a href={getPostLink(featuredZenn)} target="_blank" class="featured-card">
-              <div class="platform-badge" style={`--platform-color: ${platformConfig.zenn.color}`}>
-                <span class="platform-icon">{platformConfig.zenn.icon}</span>
-                <span class="platform-label">{platformConfig.zenn.label}</span>
-              </div>
-              <div class="featured-image">
-                <PostFeaturedImage post={featuredZenn} enableLink={false} />
-              </div>
-              <div class="featured-content">
-                <h3 class="featured-title">
-                  {featuredZenn.Icon?.Type === 'emoji' && (
-                    <span class="post-icon">{featuredZenn.Icon.Emoji}</span>
-                  )}
-                  {featuredZenn.Title}
-                </h3>
-                <div class="featured-meta">
-                  <span class="featured-tag">{featuredZenn.Tags?.[0]?.name}</span>
-                  <span class="featured-date">{getDateStr(featuredZenn.Date)}</span>
+          {
+            featuredZenn && (
+              <>
+                <div
+                  class="mobile-platform-header"
+                  style={`--platform-color: ${platformConfig.zenn.color}`}
+                >
+                  <span class="mobile-platform-icon">
+                    {platformConfig.zenn.icon}
+                  </span>
+                  <span class="mobile-platform-name">
+                    {platformConfig.zenn.label}
+                  </span>
                 </div>
-              </div>
-            </a>
-          )}
+                <a
+                  href={getPostLink(featuredZenn)}
+                  target="_blank"
+                  class="featured-card"
+                >
+                  <div
+                    class="platform-badge"
+                    style={`--platform-color: ${platformConfig.zenn.color}`}
+                  >
+                    <span class="platform-icon">
+                      {platformConfig.zenn.icon}
+                    </span>
+                    <span class="platform-label">
+                      {platformConfig.zenn.label}
+                    </span>
+                  </div>
+                  <div class="featured-image">
+                    <PostFeaturedImage post={featuredZenn} enableLink={false} />
+                  </div>
+                  <div class="featured-content">
+                    <h3 class="featured-title">
+                      {featuredZenn.Icon?.Type === 'emoji' && (
+                        <span class="post-icon">{featuredZenn.Icon.Emoji}</span>
+                      )}
+                      {featuredZenn.Title}
+                    </h3>
+                    <div class="featured-meta">
+                      <span class="featured-tag">
+                        {featuredZenn.Tags?.[0]?.name}
+                      </span>
+                      <span class="featured-date">
+                        {getDateStr(featuredZenn.Date)}
+                      </span>
+                    </div>
+                  </div>
+                </a>
+              </>
+            )
+          }
         </div>
 
         {/* 右側: 全プラットフォーム混合リスト（サムネイル付き） */}
         <div class="list-column">
           <ul class="posts-list">
-            {rightPosts.map((post) => {
-              const platform = getPlatform(post)
-              const config = platformConfig[platform]
-              return (
-                <li class="post-item">
-                  <a 
-                    href={getPostLink(post)} 
-                    target={post.ExternalLink ? "_blank" : undefined}
-                    class="post-item-link"
-                  >
-                    <div class="post-item-thumb">
-                      <PostFeaturedImage post={post} enableLink={false} />
-                    </div>
-                    <span class="post-item-icon">
-                      {post.Icon?.Type === 'emoji' ? post.Icon.Emoji : '📝'}
-                    </span>
-                    <span class="post-item-title">{post.Title}</span>
-                    <span class="post-item-meta">
-                      <span 
-                        class="post-item-platform"
-                        style={`--platform-color: ${config.color}`}
-                      >
-                        {config.label}
+            {
+              rightPosts.map((post) => {
+                const platform = getPlatform(post)
+                const config = platformConfig[platform]
+                return (
+                  <li class="post-item">
+                    <a
+                      href={getPostLink(post)}
+                      target={post.ExternalLink ? '_blank' : undefined}
+                      class="post-item-link"
+                    >
+                      <div class="post-item-thumb">
+                        <PostFeaturedImage post={post} enableLink={false} />
+                      </div>
+                      <span class="post-item-icon">
+                        {post.Icon?.Type === 'emoji' ? post.Icon.Emoji : '📝'}
                       </span>
-                      <span class="post-item-date">{getDateStr(post.Date)}</span>
-                    </span>
-                  </a>
-                </li>
-              )
-            })}
+                      <span class="post-item-title">{post.Title}</span>
+                      <span class="post-item-meta">
+                        <span
+                          class="post-item-platform"
+                          style={`--platform-color: ${config.color}`}
+                        >
+                          {config.label}
+                        </span>
+                        <span class="post-item-date">
+                          {getDateStr(post.Date)}
+                        </span>
+                      </span>
+                    </a>
+                  </li>
+                )
+              })
+            }
           </ul>
         </div>
       </div>
-      
+
       <div class="see-more-wrapper">
         <a href="/posts" class="see-more-button">すべての記事を見る →</a>
       </div>
@@ -219,7 +309,7 @@ const platformConfig = {
     transform: translateY(-50%);
     width: 4px;
     height: 1.2em;
-    background: linear-gradient(180deg, var(--accents-1) 0%, #D4693A 100%);
+    background: linear-gradient(180deg, var(--accents-1) 0%, #d4693a 100%);
     border-radius: 2px;
   }
 
@@ -303,7 +393,7 @@ const platformConfig = {
     width: 100%;
     aspect-ratio: 16 / 10;
     overflow: hidden;
-    background: linear-gradient(135deg, #F5F0E8 0%, #EDE5DA 100%);
+    background: linear-gradient(135deg, #f5f0e8 0%, #ede5da 100%);
   }
 
   .featured-image :global(.post-featured-image) {
@@ -357,6 +447,11 @@ const platformConfig = {
     color: var(--accents-2);
   }
 
+  /* モバイル用プラットフォームヘッダー - PCでは非表示 */
+  .mobile-platform-header {
+    display: none;
+  }
+
   /* シンプルリスト - 左側と高さを揃える */
   .posts-list {
     list-style: none;
@@ -399,7 +494,7 @@ const platformConfig = {
     flex-shrink: 0;
     border-radius: 4px;
     overflow: hidden;
-    background: linear-gradient(135deg, #F5F0E8 0%, #EDE5DA 100%);
+    background: linear-gradient(135deg, #f5f0e8 0%, #ede5da 100%);
   }
 
   .post-item-thumb :global(.post-featured-image) {
@@ -422,7 +517,7 @@ const platformConfig = {
 
   .post-item-title {
     flex-grow: 1;
-    font-size: 0.8rem;
+    font-size: 0.875rem; /* PC: 14px (was 0.8rem/12.8px) - 少し大きく */
     font-weight: 500;
     color: var(--fg);
     line-height: 1.4;
@@ -466,7 +561,7 @@ const platformConfig = {
     align-items: center;
     gap: 0.3rem;
     padding: 0.75rem 2rem;
-    background: linear-gradient(135deg, var(--accents-1) 0%, #D4693A 100%);
+    background: linear-gradient(135deg, var(--accents-1) 0%, #d4693a 100%);
     border-radius: 9999px;
     color: #fff;
     font-size: 0.9rem;
@@ -534,34 +629,109 @@ const platformConfig = {
     }
 
     .featured-column {
-      grid-template-columns: 1fr;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      background: var(--card-bg);
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      overflow: hidden;
     }
 
-    .featured-card {
+    /* モバイル用プラットフォームヘッダー */
+    .mobile-platform-header {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.35rem;
+      padding: 0.5rem 0.75rem 0.25rem;
+      background: var(--hover-bg);
+      border-top: 1px solid var(--border-color);
+    }
+
+    .mobile-platform-header:first-child {
+      border-top: none;
+    }
+
+    .mobile-platform-icon {
+      font-size: 0.85rem;
+    }
+
+    .mobile-platform-name {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--platform-color, var(--fg));
+    }
+
+    /* Featured記事を右側リストと同じ横長スタイルに */
+    .featured-card {
+      flex-direction: row;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.5rem 0.75rem 0.6rem;
+      border-radius: 0;
+      border: none;
+    }
+
+    .featured-card:hover {
+      transform: none;
+      box-shadow: none;
+      background: var(--hover-bg);
     }
 
     .featured-image {
-      width: 5rem;
-      height: 5rem;
-      aspect-ratio: 1 / 1;
+      width: 80px;
+      height: 45px;
+      aspect-ratio: auto;
       flex-shrink: 0;
+      border-radius: 4px;
     }
 
     .featured-image :global(.post-featured-image) {
-      aspect-ratio: 1 / 1;
+      aspect-ratio: auto;
+      width: 100%;
+      height: 100%;
+    }
+
+    .platform-badge {
+      position: static;
+      padding: 0.1rem 0.35rem;
+      font-size: 0.55rem;
+      margin: 0;
+      order: 3;
+      flex-shrink: 0;
+    }
+
+    .platform-label {
+      display: inline;
+    }
+
+    .platform-icon {
+      display: none;
     }
 
     .featured-content {
       flex-grow: 1;
       padding: 0;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
     }
 
-    .platform-badge {
-      position: static;
-      margin-bottom: 0.3rem;
+    .featured-title {
+      font-size: 0.8rem;
+      -webkit-line-clamp: 3; /* スマホ: 3行まで表示 */
+      margin: 0;
+    }
+
+    .featured-meta {
+      display: none;
+    }
+
+    /* リストのタイトルも3行まで表示 */
+    .post-item-title {
+      font-size: 0.8rem;
+      -webkit-line-clamp: 3; /* スマホ: 3行まで表示 */
     }
 
     .post-item-link {
@@ -571,10 +741,6 @@ const platformConfig = {
     .post-item-thumb {
       width: 60px;
       height: 34px;
-    }
-
-    .post-item-title {
-      font-size: 0.75rem;
     }
   }
 </style>
