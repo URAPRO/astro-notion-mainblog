@@ -1,22 +1,11 @@
 ---
-import { NUMBER_OF_POSTS_PER_PAGE } from '../../server-constants.ts'
 import { getAllBlogPosts } from '../../lib/notion/client.ts'
 import Layout from '../../layouts/Layout.astro'
 import NoContents from '../../components/NoContents.astro'
 import PostFeaturedImage from '../../components/PostFeaturedImage.astro'
-import Pagination from '../../components/Pagination.astro'
 import { getPostLink, getDateStr } from '../../lib/blog-helpers.ts'
 
 const allPosts = await getAllBlogPosts()
-
-// 内部記事のみ抽出
-const internalAllPosts = allPosts.filter((post) => !post.ExternalLink)
-
-const numberOfPages =
-  Math.floor(internalAllPosts.length / NUMBER_OF_POSTS_PER_PAGE) +
-  (internalAllPosts.length % NUMBER_OF_POSTS_PER_PAGE > 0 ? 1 : 0)
-
-const posts = internalAllPosts.slice(0, NUMBER_OF_POSTS_PER_PAGE)
 
 // プラットフォームを判定するヘルパー
 const getPlatform = (post: (typeof allPosts)[0]) => {
@@ -26,36 +15,85 @@ const getPlatform = (post: (typeof allPosts)[0]) => {
   return 'external'
 }
 
+// プラットフォーム別件数
+const blogCount = allPosts.filter((p) => getPlatform(p) === 'blog').length
+const noteCount = allPosts.filter((p) => getPlatform(p) === 'note').length
+const zennCount = allPosts.filter((p) => getPlatform(p) === 'zenn').length
+
 const platformConfig = {
   blog: { icon: '🏠', label: 'Blog', color: '#E07A3D' },
   note: { icon: '✍️', label: 'note', color: '#41c9b4' },
   zenn: { icon: '💻', label: 'Zenn', color: '#3EA8FF' },
   external: { icon: '🔗', label: 'External', color: '#888' },
 }
+
+// 初期表示件数
+const INITIAL_COUNT = 12
+const LOAD_MORE_COUNT = 9
 ---
 
 <Layout
   title="すべての記事"
   path="/posts"
-  description="urapro.dev のすべての記事一覧。Web開発技術、プログラミングTIPS、読書記録などを発信しています。"
+  description="urapro.dev のすべての記事一覧。Blog、note、Zennで発信したWeb開発技術、プログラミングTIPS、読書記録をまとめています。"
   ogImage=""
 >
   <div slot="main" class="posts-page">
     <header class="page-header">
       <h1 class="section-heading">すべての記事</h1>
-      <p class="page-description">全 {internalAllPosts.length} 件の記事</p>
+      <p class="page-description">全 {allPosts.length} 件</p>
     </header>
 
+    <!-- フィルターチップ（スティッキー） -->
+    <div class="filter-container">
+      <div class="filter-chips">
+        <button class="filter-chip active" data-filter="all">
+          すべて <span class="chip-count">{allPosts.length}</span>
+        </button>
+        <button class="filter-chip" data-filter="blog">
+          <span class="chip-icon">🏠</span> Blog <span class="chip-count"
+            >{blogCount}</span
+          >
+        </button>
+        <button class="filter-chip" data-filter="note">
+          <span class="chip-icon">✍️</span> note <span class="chip-count"
+            >{noteCount}</span
+          >
+        </button>
+        <button class="filter-chip" data-filter="zenn">
+          <span class="chip-icon">💻</span> Zenn <span class="chip-count"
+            >{zennCount}</span
+          >
+        </button>
+      </div>
+    </div>
+
     {
-      posts.length === 0 ? (
-        <NoContents contents={posts} />
+      allPosts.length === 0 ? (
+        <NoContents contents={allPosts} />
       ) : (
-        <div class="posts-grid">
-          {posts.map((post) => {
+        <div class="posts-grid" id="posts-grid">
+          {allPosts.map((post, index) => {
             const platform = getPlatform(post)
             const config = platformConfig[platform]
+            const isHidden = index >= INITIAL_COUNT
             return (
-              <a href={getPostLink(post)} class="post-card">
+              <a
+                href={getPostLink(post)}
+                target={post.ExternalLink ? '_blank' : undefined}
+                class={`post-card ${isHidden ? 'hidden' : ''}`}
+                data-platform={platform}
+                data-index={index}
+              >
+                {platform !== 'blog' && (
+                  <div
+                    class="platform-badge"
+                    style={`--platform-color: ${config.color}`}
+                  >
+                    <span class="badge-icon">{config.icon}</span>
+                    <span class="badge-label">{config.label}</span>
+                  </div>
+                )}
                 <div class="post-image">
                   <PostFeaturedImage post={post} enableLink={false} />
                 </div>
@@ -80,11 +118,99 @@ const platformConfig = {
       )
     }
 
-    <footer class="page-footer">
-      <Pagination currentPage={1} numberOfPages={numberOfPages} tag="" />
-    </footer>
+    <!-- 読み込みトリガー -->
+    <div id="load-trigger" class="load-trigger">
+      <div class="loading-spinner"></div>
+    </div>
+
+    <!-- 読み込み完了メッセージ -->
+    <div id="end-message" class="end-message hidden">
+      すべての記事を表示しました
+    </div>
   </div>
 </Layout>
+
+<script define:vars={{ INITIAL_COUNT, LOAD_MORE_COUNT }}>
+  document.addEventListener('DOMContentLoaded', () => {
+    const chips = document.querySelectorAll('.filter-chip')
+    const cards = document.querySelectorAll('.post-card')
+    const loadTrigger = document.getElementById('load-trigger')
+    const endMessage = document.getElementById('end-message')
+
+    let currentFilter = 'all'
+    let visibleCount = INITIAL_COUNT
+
+    // フィルター機能
+    chips.forEach((chip) => {
+      chip.addEventListener('click', () => {
+        // アクティブ状態の切り替え
+        chips.forEach((c) => c.classList.remove('active'))
+        chip.classList.add('active')
+
+        currentFilter = chip.dataset.filter
+        visibleCount = INITIAL_COUNT
+
+        updateVisibility()
+      })
+    })
+
+    // 表示更新
+    function updateVisibility() {
+      let count = 0
+      let totalFiltered = 0
+
+      cards.forEach((card) => {
+        const platform = card.dataset.platform
+        const matchesFilter =
+          currentFilter === 'all' || platform === currentFilter
+
+        if (matchesFilter) {
+          totalFiltered++
+          if (count < visibleCount) {
+            card.classList.remove('hidden')
+            card.classList.remove('filtered-out')
+            count++
+          } else {
+            card.classList.add('hidden')
+            card.classList.remove('filtered-out')
+          }
+        } else {
+          card.classList.add('filtered-out')
+          card.classList.remove('hidden')
+        }
+      })
+
+      // 読み込み完了判定
+      if (count >= totalFiltered) {
+        loadTrigger.classList.add('hidden')
+        endMessage.classList.remove('hidden')
+      } else {
+        loadTrigger.classList.remove('hidden')
+        endMessage.classList.add('hidden')
+      }
+    }
+
+    // 無限スクロール
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            visibleCount += LOAD_MORE_COUNT
+            updateVisibility()
+          }
+        })
+      },
+      {
+        rootMargin: '100px',
+      }
+    )
+
+    observer.observe(loadTrigger)
+
+    // 初期表示
+    updateVisibility()
+  })
+</script>
 
 <style>
   .posts-page {
@@ -94,7 +220,7 @@ const platformConfig = {
   }
 
   .page-header {
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
   }
 
   .section-heading {
@@ -125,6 +251,58 @@ const platformConfig = {
     color: var(--accents-2);
   }
 
+  /* フィルターチップ */
+  .filter-container {
+    position: sticky;
+    top: 70px;
+    z-index: 50;
+    background: var(--bg);
+    padding: 0.75rem 0;
+    margin-bottom: 1.5rem;
+  }
+
+  .filter-chips {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 9999px;
+    background: var(--card-bg);
+    color: var(--fg);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .filter-chip:hover {
+    border-color: var(--accents-1);
+    background: var(--hover-bg);
+  }
+
+  .filter-chip.active {
+    background: linear-gradient(135deg, var(--accents-1) 0%, #d4693a 100%);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(224, 122, 61, 0.3);
+  }
+
+  .chip-icon {
+    font-size: 0.9rem;
+  }
+
+  .chip-count {
+    font-size: 0.75rem;
+    opacity: 0.8;
+  }
+
   /* グリッドレイアウト */
   .posts-grid {
     display: grid;
@@ -149,6 +327,17 @@ const platformConfig = {
     color: inherit;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border: 1px solid var(--border-color);
+    position: relative;
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .post-card.hidden {
+    display: none;
+  }
+
+  .post-card.filtered-out {
+    display: none;
   }
 
   .post-card:hover {
@@ -159,6 +348,28 @@ const platformConfig = {
 
   .post-card:hover .post-image :global(img) {
     transform: scale(1.03);
+  }
+
+  /* プラットフォームバッジ */
+  .platform-badge {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.3rem 0.5rem;
+    background: var(--platform-color, #888);
+    border-radius: 6px;
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  }
+
+  .badge-icon {
+    font-size: 0.85rem;
   }
 
   .post-image {
@@ -223,10 +434,41 @@ const platformConfig = {
     color: var(--accents-2);
   }
 
-  .page-footer {
-    margin-top: 2.5rem;
-    padding-top: 2rem;
-    border-top: 1px dashed var(--border-color);
+  /* 読み込みトリガー */
+  .load-trigger {
+    display: flex;
+    justify-content: center;
+    padding: 2rem 0;
+  }
+
+  .load-trigger.hidden {
+    display: none;
+  }
+
+  .loading-spinner {
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--border-color);
+    border-top-color: var(--accents-1);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .end-message {
+    text-align: center;
+    padding: 2rem 0;
+    color: var(--accents-2);
+    font-size: 0.9rem;
+  }
+
+  .end-message.hidden {
+    display: none;
   }
 
   /* モバイル対応 */
@@ -237,6 +479,27 @@ const platformConfig = {
 
     .section-heading {
       font-size: 1.3rem;
+    }
+
+    .filter-container {
+      top: 60px;
+      padding: 0.5rem 0;
+      margin-bottom: 1rem;
+    }
+
+    .filter-chips {
+      gap: 0.35rem;
+      overflow-x: auto;
+      flex-wrap: nowrap;
+      padding-bottom: 0.25rem;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .filter-chip {
+      padding: 0.4rem 0.75rem;
+      font-size: 0.8rem;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
     /* モバイルでは横長リスト形式 */
@@ -260,7 +523,7 @@ const platformConfig = {
       border-bottom: 1px solid var(--border-color);
     }
 
-    .post-card:last-child {
+    .post-card:last-child:not(.hidden):not(.filtered-out) {
       border-bottom: none;
     }
 
@@ -268,6 +531,18 @@ const platformConfig = {
       transform: none;
       box-shadow: none;
       background: var(--hover-bg);
+    }
+
+    .platform-badge {
+      position: static;
+      order: 3;
+      padding: 0.15rem 0.35rem;
+      font-size: 0.55rem;
+      flex-shrink: 0;
+    }
+
+    .badge-icon {
+      display: none;
     }
 
     .post-image {
@@ -309,11 +584,6 @@ const platformConfig = {
 
     .post-date {
       font-size: 0.65rem;
-    }
-
-    .page-footer {
-      margin-top: 1.5rem;
-      padding-top: 1.5rem;
     }
   }
 </style>
