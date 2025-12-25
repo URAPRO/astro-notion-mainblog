@@ -1,193 +1,51 @@
 ---
-import { getDatabase, getPosts, getRankedPosts, getAllTags } from '../lib/notion/client.ts'
-import { getPostLink, getTagLink } from '../lib/blog-helpers.ts'
+import { getDatabase } from '../lib/notion/client.ts'
 
 const database = await getDatabase()
-const recentPosts = await getPosts(5)
-const rankedPosts = await getRankedPosts()
-const tags = await getAllTags()
 ---
 
 <footer class="site-footer">
-  <div class="footer-container">
-    <!-- 最新記事セクション -->
-    <div class="footer-section">
-      <h3 class="footer-heading">最新記事</h3>
-      <ul class="footer-posts">
-        {recentPosts.map((post) => (
-          <li>
-            <a href={getPostLink(post)}>
-              {post.Icon?.Type === 'emoji' && <span class="post-emoji">{post.Icon.Emoji}</span>}
-              <span class="post-title">{post.Title}</span>
-            </a>
-          </li>
-        ))}
-      </ul>
-    </div>
-
-    <!-- おすすめ記事セクション -->
-    {rankedPosts.length > 0 && (
-      <div class="footer-section">
-        <h3 class="footer-heading">おすすめ記事</h3>
-        <ul class="footer-posts">
-          {rankedPosts.slice(0, 5).map((post) => (
-            <li>
-              <a href={getPostLink(post)}>
-                {post.Icon?.Type === 'emoji' && <span class="post-emoji">{post.Icon.Emoji}</span>}
-                <span class="post-title">{post.Title}</span>
-              </a>
-            </li>
-          ))}
-        </ul>
-      </div>
-    )}
-
-    <!-- カテゴリーセクション -->
-    <div class="footer-section">
-      <h3 class="footer-heading">カテゴリー</h3>
-      <div class="footer-tags">
-        {tags.map((tag) => (
-          <a href={getTagLink(tag.name)} class="footer-tag">
-            {tag.name}
-          </a>
-        ))}
-      </div>
-    </div>
-  </div>
-
-  <!-- コピーライト -->
-  <div class="footer-bottom">
+  <div class="footer-content">
     <p>
-      © {new Date().getFullYear()} {database.Title}. 
-      Powered by <a href="https://github.com/otoyo/astro-notion-blog" target="_blank" rel="noopener noreferrer">astro-notion-blog</a>
+      © {new Date().getFullYear()}
+      {database.Title}. Powered by <a
+        href="https://github.com/otoyo/astro-notion-blog"
+        target="_blank"
+        rel="noopener noreferrer">astro-notion-blog</a
+      >
     </p>
   </div>
 </footer>
 
 <style>
   .site-footer {
-    background: linear-gradient(180deg, #F5F0E8 0%, #EDE5DA 100%);
-    border-top: 1px solid #E8E2D9;
+    border-top: 1px solid var(--border-color, #e8e2d9);
     margin-top: 4rem;
   }
 
-  .footer-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 2.5rem 1.5rem 2rem;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 2rem;
-  }
-
-  .footer-section {
-    min-width: 0;
-  }
-
-  /* セクション見出し */
-  .footer-heading {
-    font-size: 0.9rem;
-    font-weight: 700;
-    color: #2D2A26;
-    margin: 0 0 0.75rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid #E07A3D;
-  }
-
-  /* 記事リスト */
-  .footer-posts {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-
-  .footer-posts li {
-    margin-bottom: 0.4rem;
-  }
-
-  .footer-posts a {
+  .footer-content {
     display: flex;
-    align-items: flex-start;
-    gap: 0.4rem;
-    font-size: 0.85rem;
-    color: #5C5650;
-    text-decoration: none;
-    line-height: 1.4;
-    padding: 0.25rem 0;
-    transition: color 0.2s ease;
-  }
-
-  .footer-posts a:hover {
-    color: #E07A3D;
-  }
-
-  .post-emoji {
-    flex-shrink: 0;
-    font-size: 0.9rem;
-  }
-
-  .post-title {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  /* タグリスト */
-  .footer-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-  }
-
-  .footer-tag {
-    padding: 0.3rem 0.6rem;
-    background: rgba(255, 255, 255, 0.8);
-    border-radius: 4px;
-    font-size: 0.8rem;
-    color: #5C5650;
-    text-decoration: none;
-    transition: all 0.2s ease;
-  }
-
-  .footer-tag:hover {
-    background: #E07A3D;
-    color: #fff;
-  }
-
-  /* コピーライト */
-  .footer-bottom {
-    border-top: 1px solid #E8E2D9;
-    padding: 1rem 1.5rem;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding: 1.5rem;
     text-align: center;
   }
 
-  .footer-bottom p {
+  .footer-content p {
     margin: 0;
-    font-size: 0.75rem;
-    color: #8B7355;
+    font-size: 0.8rem;
+    color: var(--accents-2, #8b7355);
   }
 
-  .footer-bottom a {
-    color: #E07A3D;
+  .footer-content a {
+    color: var(--accents-1, #e07a3d);
     text-decoration: none;
+    transition: opacity 0.2s ease;
   }
 
-  .footer-bottom a:hover {
+  .footer-content a:hover {
+    opacity: 0.7;
     text-decoration: underline;
-  }
-
-  /* レスポンシブ */
-  @media (max-width: 768px) {
-    .footer-container {
-      grid-template-columns: 1fr 1fr;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .footer-container {
-      grid-template-columns: 1fr;
-      padding: 2rem 1rem 1.5rem;
-      gap: 1.5rem;
-    }
   }
 </style>
