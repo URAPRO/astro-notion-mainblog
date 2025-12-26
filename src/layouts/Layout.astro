@@ -78,6 +78,12 @@ if (profilePost?.FeaturedImage?.Url) {
     <meta name="description" content={effectiveDescription} />
     <link rel="canonical" href={siteURL} />
     <link rel="sitemap" href="/sitemap.xml" />
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title={`${database.Title} RSS Feed`}
+      href="/rss.xml"
+    />
     <meta property="og:url" content={siteURL} />
     <meta property="og:type" content={ogType} />
     <meta property="og:title" content={siteTitle} />

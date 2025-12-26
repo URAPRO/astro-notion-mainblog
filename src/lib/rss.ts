@@ -20,11 +20,16 @@ export async function buildRssResponse(options: BuildRssOptions = {}) {
     title,
     description: database.Description,
     site: import.meta.env.SITE,
+    // 日本語コンテンツを明示
+    customData: `<language>ja</language>`,
     items: filteredPosts.map((post: Post) => ({
       link: new URL(getPostLink(post), import.meta.env.SITE).toString(),
       title: post.Title,
-      description: post.Excerpt,
+      // MetaDescriptionがあればそれを使用、なければExcerptにフォールバック
+      description: post.MetaDescription || post.Excerpt,
       pubDate: new Date(post.Date),
+      // タグをカテゴリとして追加
+      categories: post.Tags?.map((tag) => tag.name) || [],
     })),
   })
 }
