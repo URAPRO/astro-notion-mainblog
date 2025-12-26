@@ -95,19 +95,38 @@ if (profilePost?.FeaturedImage?.Url) {
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content={ogImage || siteOGImage} />
     <meta name="google-adsense-account" content="ca-pub-7004556551724349" />
+    <!-- KaTeX CSS: 非同期読み込みでレンダリングブロック解消 -->
     <link
-      rel="stylesheet"
+      rel="preload"
+      as="style"
       href="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.css"
       integrity="sha384-vKruj+a13U8yHIkAyGgK1J3ArTLzrFGBbBc0tDp4ad/EyewESeXE/Iv67Aj8gKZ0"
       crossorigin="anonymous"
+      onload="this.onload=null;this.rel='stylesheet'"
     />
-    <!--Google Font Optimization-->
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.css"
+        integrity="sha384-vKruj+a13U8yHIkAyGgK1J3ArTLzrFGBbBc0tDp4ad/EyewESeXE/Iv67Aj8gKZ0"
+        crossorigin="anonymous"
+      />
+    </noscript>
+    <!-- Google Fonts: 非同期読み込み -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700&display=swap"
       rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
     />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
     <slot name="head-append" />
   </head>
   <body>

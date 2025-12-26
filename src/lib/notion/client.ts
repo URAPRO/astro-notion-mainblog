@@ -500,10 +500,21 @@ export async function downloadFile(url: URL, slug?: string, imageIndex?: number 
       
       const buffer = Buffer.concat(chunks)
       
-      // sharpでEXIF削除と回転処理
-      const processedBuffer = await sharp(buffer)
-        .rotate()
-        .toBuffer()
+      // sharpでEXIF削除、回転処理、リサイズを実行
+      const metadata = await sharp(buffer).metadata()
+      let sharpInstance = sharp(buffer).rotate()
+      
+      // 幅が800pxを超える場合はリサイズ（ブログコンテンツ幅に合わせる）
+      const MAX_WIDTH = 800
+      if (metadata.width && metadata.width > MAX_WIDTH) {
+        sharpInstance = sharpInstance.resize(MAX_WIDTH, null, {
+          withoutEnlargement: true,
+          fit: 'inside'
+        })
+        console.log(`Resizing image from ${metadata.width}px to ${MAX_WIDTH}px`)
+      }
+      
+      const processedBuffer = await sharpInstance.toBuffer()
       
       // オリジナル画像を保存
       await fs.promises.writeFile(filepath, processedBuffer)
