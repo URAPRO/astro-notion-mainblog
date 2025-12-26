@@ -155,7 +155,7 @@ export async function getAllPosts(): Promise<Post[]> {
         if (slugProp && slugProp.type === 'rich_text' && slugProp.rich_text && slugProp.rich_text.length > 0) {
           slug = slugProp.rich_text.map((rt) => rt.plain_text).join('')
         }
-        
+
         // slugが存在する場合はslug-iconとして保存、そうでなければそのまま保存
         if (slug) {
           await downloadFile(url, slug, 'icon')
@@ -455,21 +455,23 @@ export async function downloadFile(url: URL, slug?: string, imageIndex?: number 
   const originalFilename = decodeURIComponent(url.pathname.split('/').slice(-1)[0])
   // ファイル拡張子を取得
   const fileExtension = originalFilename.split('.').pop() || ''
-  
+
   // 画像ファイルかどうか判定
   const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExtension.toLowerCase())
-  
+
   // slugとimageIndexが提供されている場合、新しいファイル名を生成
   let filepath
   let webpFilepath
-  let thumbnailFilepath
-  
+  let mediumFilepath
+  let smallFilepath
+
   if (slug && imageIndex !== undefined) {
     const baseName = `${slug}-${imageIndex}`
     filepath = `${dir}/${baseName}.${fileExtension}`
     if (isImage) {
       webpFilepath = `${dir}/${baseName}.webp`
-      thumbnailFilepath = `${dir}/${baseName}-thumb.webp`
+      mediumFilepath = `${dir}/${baseName}-md.webp`
+      smallFilepath = `${dir}/${baseName}-sm.webp`
     }
     console.log(`Renaming file to: ${baseName}.${fileExtension}`)
   } else {
@@ -477,10 +479,11 @@ export async function downloadFile(url: URL, slug?: string, imageIndex?: number 
     if (isImage) {
       const nameWithoutExt = originalFilename.slice(0, originalFilename.lastIndexOf('.'))
       webpFilepath = `${dir}/${nameWithoutExt}.webp`
-      thumbnailFilepath = `${dir}/${nameWithoutExt}-thumb.webp`
+      mediumFilepath = `${dir}/${nameWithoutExt}-md.webp`
+      smallFilepath = `${dir}/${nameWithoutExt}-sm.webp`
     }
   }
-  
+
   console.log(`Saving file to: ${filepath}`)
 
   const writeStream = createWriteStream(filepath)
@@ -492,18 +495,18 @@ export async function downloadFile(url: URL, slug?: string, imageIndex?: number 
       // オリジナル画像を保存
       const chunks: Buffer[] = []
       stream.on('data', (chunk: Buffer) => chunks.push(chunk))
-      
+
       await new Promise<void>((resolve, reject) => {
         stream.on('end', () => resolve())
         stream.on('error', reject)
       })
-      
+
       const buffer = Buffer.concat(chunks)
-      
+
       // sharpでEXIF削除、回転処理、リサイズを実行
       const metadata = await sharp(buffer).metadata()
       let sharpInstance = sharp(buffer).rotate()
-      
+
       // 幅が800pxを超える場合はリサイズ（ブログコンテンツ幅に合わせる）
       const MAX_WIDTH = 800
       if (metadata.width && metadata.width > MAX_WIDTH) {
@@ -513,33 +516,45 @@ export async function downloadFile(url: URL, slug?: string, imageIndex?: number 
         })
         console.log(`Resizing image from ${metadata.width}px to ${MAX_WIDTH}px`)
       }
-      
+
       const processedBuffer = await sharpInstance.toBuffer()
-      
+
       // オリジナル画像を保存
       await fs.promises.writeFile(filepath, processedBuffer)
       console.log(`Original image saved: ${filepath}`)
-      
-      // WebP変換（元がWebPでない場合）
-      if (fileExtension.toLowerCase() !== 'webp' && webpFilepath) {
+
+      // Large WebP (800px) - 本文・大カード用
+      if (webpFilepath) {
         await sharp(processedBuffer)
           .webp({ quality: 85 })
           .toFile(webpFilepath)
-        console.log(`WebP image saved: ${webpFilepath}`)
+        console.log(`Large WebP saved: ${webpFilepath}`)
       }
-      
-      // サムネイル生成（幅400pxに縮小）
-      if (thumbnailFilepath) {
+
+      // Medium WebP (400px) - 中サムネイル・カード用
+      if (mediumFilepath) {
         await sharp(processedBuffer)
-          .resize(400, null, { 
+          .resize(400, null, {
             withoutEnlargement: true,
             fit: 'inside'
           })
           .webp({ quality: 80 })
-          .toFile(thumbnailFilepath)
-        console.log(`Thumbnail saved: ${thumbnailFilepath}`)
+          .toFile(mediumFilepath)
+        console.log(`Medium WebP saved: ${mediumFilepath}`)
       }
-      
+
+      // Small WebP (200px) - 極小サムネイル用
+      if (smallFilepath) {
+        await sharp(processedBuffer)
+          .resize(200, null, {
+            withoutEnlargement: true,
+            fit: 'inside'
+          })
+          .webp({ quality: 75 })
+          .toFile(smallFilepath)
+        console.log(`Small WebP saved: ${smallFilepath}`)
+      }
+
       console.log(`File saved successfully: ${filepath}`)
     } catch (err) {
       console.error(`Failed to process image: ${err}`)

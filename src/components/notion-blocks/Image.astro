@@ -6,102 +6,109 @@ import Caption from './Caption.astro'
 
 export interface Props {
   block: interfaces.Block
-  slug?: string 
+  slug?: string
   imageIndex?: number
 }
 
 const { block } = Astro.props
 
 let imageSrc = ''
-let webpSrc = ''
-let thumbnailSrc = ''
+let webpSrc = '' // Large: 800px
+let mediumSrc = '' // Medium: 400px
+let smallSrc = '' // Small: 200px
 
 if (block.Image?.External?.Url) {
   imageSrc = block.Image.External.Url
 } else if (block.Image?.File?.Url) {
   const originalPath = filePath(new URL(block.Image.File.Url))
   imageSrc = originalPath
-  
-  // WebPとサムネイルのパスを生成
+
+  // 各サイズのWebPパスを生成
   const pathParts = originalPath.split('.')
   const ext = pathParts.pop()
   const basePath = pathParts.join('.')
-  
-  // WebPファイルが存在する可能性があるパス
-  if (ext && ext.toLowerCase() !== 'webp') {
-    webpSrc = `${basePath}.webp`
-  }
-  
-  // サムネイルのパス
-  thumbnailSrc = `${basePath}-thumb.webp`
+
+  // WebPファイルのパス
+  webpSrc = `${basePath}.webp`
+  mediumSrc = `${basePath}-md.webp`
+  smallSrc = `${basePath}-sm.webp`
 }
 
+// srcset文字列を生成
+const srcsetValue = [smallSrc, mediumSrc, webpSrc]
+  .filter(Boolean)
+  .map((url, i) => {
+    const widths = [200, 400, 800]
+    return `${url} ${widths[i]}w`
+  })
+  .join(', ')
+
 // キャプションからの情報抽出
-let specifiedWidthString = '';
-let altText = "Image from blog post";
-let displayCaption = '';
+let specifiedWidthString = ''
+let altText = 'Image from blog post'
+let displayCaption = ''
 
 if (block.Image?.Caption && block.Image.Caption.length > 0) {
-  let captionInput = block.Image.Caption.map(c => c.PlainText).join('').trim();
-  const altRegex = /alt:((?:(?!size:).)+)/i;
-  const altMatch = captionInput.match(altRegex);
+  let captionInput = block.Image.Caption.map((c) => c.PlainText)
+    .join('')
+    .trim()
+  const altRegex = /alt:((?:(?!size:).)+)/i
+  const altMatch = captionInput.match(altRegex)
   if (altMatch && altMatch[1]) {
-    altText = altMatch[1].trim();
-    captionInput = captionInput.replace(altMatch[0], '').trim();
+    altText = altMatch[1].trim()
+    captionInput = captionInput.replace(altMatch[0], '').trim()
   }
-  const sizeRegex = /(?:size:\s*|size\s*)(\d+)(px)?/i;
-  const sizeMatch = captionInput.match(sizeRegex);
+  const sizeRegex = /(?:size:\s*|size\s*)(\d+)(px)?/i
+  const sizeMatch = captionInput.match(sizeRegex)
   if (sizeMatch && sizeMatch[1]) {
-    specifiedWidthString = sizeMatch[1].trim() + (sizeMatch[2] || 'px');
-    captionInput = captionInput.replace(sizeMatch[0], '').trim();
+    specifiedWidthString = sizeMatch[1].trim() + (sizeMatch[2] || 'px')
+    captionInput = captionInput.replace(sizeMatch[0], '').trim()
   }
-  displayCaption = captionInput;
-  if (altText === "Image from blog post" && displayCaption) {
-    altText = displayCaption;
-    displayCaption = '';
+  displayCaption = captionInput
+  if (altText === 'Image from blog post' && displayCaption) {
+    altText = displayCaption
+    displayCaption = ''
   }
   if (block.Image.Caption[0]?.Text) {
     if (displayCaption) {
-      block.Image.Caption[0].Text.Content = displayCaption;
+      block.Image.Caption[0].Text.Content = displayCaption
     } else {
-      block.Image.Caption = [];
+      block.Image.Caption = []
     }
   }
-} else { 
-  // キャプションがない場合、ファイル名などからaltを生成 (既存ロジック)
+} else {
+  // キャプションがない場合、ファイル名などからaltを生成
   if (block.Image?.File?.Url) {
     try {
-      const urlParts = new URL(block.Image.File.Url).pathname.split('/');
-      altText = decodeURIComponent(urlParts[urlParts.length - 1]);
+      const urlParts = new URL(block.Image.File.Url).pathname.split('/')
+      altText = decodeURIComponent(urlParts[urlParts.length - 1])
     } catch {}
   } else if (block.Image?.External?.Url) {
     try {
-      const urlParts = new URL(block.Image.External.Url).pathname.split('/');
-      altText = decodeURIComponent(urlParts[urlParts.length - 1]);
+      const urlParts = new URL(block.Image.External.Url).pathname.split('/')
+      altText = decodeURIComponent(urlParts[urlParts.length - 1])
     } catch {}
   }
 }
 
 // width と height の決定
-let finalWidth: number | undefined;
-let finalHeight: number | undefined;
+let finalWidth: number | undefined
+let finalHeight: number | undefined
 
-const originalWidth = block.Image?.Width;
-const originalHeight = block.Image?.Height;
+const originalWidth = block.Image?.Width
+const originalHeight = block.Image?.Height
 
 if (specifiedWidthString && originalWidth && originalHeight) {
-  finalWidth = parseInt(specifiedWidthString, 10);
+  finalWidth = parseInt(specifiedWidthString, 10)
   if (!isNaN(finalWidth)) {
-    finalHeight = Math.round((originalHeight / originalWidth) * finalWidth);
+    finalHeight = Math.round((originalHeight / originalWidth) * finalWidth)
   } else {
-    finalWidth = undefined; // パース失敗時は未定義に
+    finalWidth = undefined
   }
 } else if (originalWidth && originalHeight) {
-  // サイズ指定がない場合は、元のサイズを使用
-  finalWidth = originalWidth;
-  finalHeight = originalHeight;
+  finalWidth = originalWidth
+  finalHeight = originalHeight
 }
-
 ---
 
 <figure class="image">
@@ -110,40 +117,48 @@ if (specifiedWidthString && originalWidth && originalHeight) {
       <div>
         <div>
           {ENABLE_LIGHTBOX ? (
-            <a data-fslightbox href={imageSrc} data-type="image">
+            <a data-fslightbox href={webpSrc || imageSrc} data-type="image">
               <picture>
-                {webpSrc && <source srcset={webpSrc} type="image/webp" />}
-                <img 
-                  src={imageSrc} 
-                  alt={altText} 
-                  width={finalWidth} 
-                  height={finalHeight} 
-                  loading="lazy" 
+                {srcsetValue && (
+                  <source
+                    srcset={srcsetValue}
+                    sizes="(max-width: 400px) 400px, 800px"
+                    type="image/webp"
+                  />
+                )}
+                <img
+                  src={webpSrc || imageSrc}
+                  alt={altText}
+                  width={finalWidth}
+                  height={finalHeight}
+                  loading="lazy"
                   decoding="async"
-                  data-src={imageSrc}
-                  data-thumbnail={thumbnailSrc}
-                  class="lazy-content-image"
                 />
               </picture>
             </a>
           ) : (
             <picture>
-              {webpSrc && <source srcset={webpSrc} type="image/webp" />}
-              <img 
-                src={imageSrc} 
-                alt={altText} 
-                width={finalWidth} 
-                height={finalHeight} 
-                loading="lazy" 
+              {srcsetValue && (
+                <source
+                  srcset={srcsetValue}
+                  sizes="(max-width: 400px) 400px, 800px"
+                  type="image/webp"
+                />
+              )}
+              <img
+                src={webpSrc || imageSrc}
+                alt={altText}
+                width={finalWidth}
+                height={finalHeight}
+                loading="lazy"
                 decoding="async"
-                data-src={imageSrc}
-                data-thumbnail={thumbnailSrc}
-                class="lazy-content-image"
               />
             </picture>
           )}
         </div>
-        {block.Image?.Caption && block.Image.Caption.length > 0 && <Caption richTexts={block.Image.Caption} />}
+        {block.Image?.Caption && block.Image.Caption.length > 0 && (
+          <Caption richTexts={block.Image.Caption} />
+        )}
       </div>
     )
   }
@@ -157,69 +172,11 @@ if (specifiedWidthString && originalWidth && originalHeight) {
   .image > div {
     margin: 0 auto;
   }
-  .image > div > div {
-  }
   .image > div > div img {
     display: block;
     max-width: 100%;
-    transition: opacity 0.3s ease-in-out, filter 0.3s ease-in-out;
-  }
-  
-  .image img.lazy-loading {
-    filter: blur(10px);
-    opacity: 0.8;
-  }
-  
-  .image img.lazy-loaded {
-    filter: blur(0);
-    opacity: 1;
+    /* 縮小表示時の品質向上 */
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
   }
 </style>
-
-<script>
-  // コンテンツ画像用のレイジーローディング実装
-  if ('IntersectionObserver' in window) {
-    const contentImages = document.querySelectorAll('img.lazy-content-image');
-    
-    const contentImageObserver = new IntersectionObserver((entries, observer) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const img = entry.target as HTMLImageElement;
-          const thumbnail = img.getAttribute('data-thumbnail');
-          const fullSrc = img.getAttribute('data-src');
-          
-          if (thumbnail && fullSrc) {
-            img.classList.add('lazy-loading');
-            
-            // サムネイルを読み込む
-            const thumbnailImg = new Image();
-            thumbnailImg.onload = () => {
-              // サムネイルのセット（既にsrcが設定されている場合はスキップ）
-              if (!img.src.includes('-thumb')) {
-                img.src = thumbnail;
-              }
-              
-              // フルサイズ画像を読み込む
-              const fullImg = new Image();
-              fullImg.onload = () => {
-                img.src = fullSrc;
-                img.classList.remove('lazy-loading');
-                img.classList.add('lazy-loaded');
-              };
-              fullImg.src = fullSrc;
-            };
-            thumbnailImg.src = thumbnail;
-          } else {
-            img.classList.add('lazy-loaded');
-          }
-          
-          observer.unobserve(img);
-        }
-      });
-    }, {
-      rootMargin: '100px'
-    });
-    
-    contentImages.forEach(img => contentImageObserver.observe(img));
-  }
-</script>
