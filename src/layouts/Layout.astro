@@ -18,13 +18,20 @@ export interface Props {
   metaDescription?: string
 }
 
-const { title = '', description = '', path = '/', ogImage = '', metaDescription } = Astro.props
+const {
+  title = '',
+  description = '',
+  path = '/',
+  ogImage = '',
+  metaDescription,
+} = Astro.props
 
 const database = await getDatabase()
 const profilePost = await getPostBySlug('profile')
 
 const siteTitle = title ? `${title} - ${database.Title}` : database.Title
-const effectiveDescription = metaDescription || description || database.Description
+const effectiveDescription =
+  metaDescription || description || database.Description
 const siteURL = new URL(getNavLink(path), Astro.site).toString()
 const siteOGImage = new URL(
   getStaticFilePath('/default-og-image.png'),
@@ -32,7 +39,9 @@ const siteOGImage = new URL(
 )
 
 // og:type の決定
-const ogType = Astro.url.pathname.startsWith(getNavLink('/posts')) ? 'article' : 'website';
+const ogType = Astro.url.pathname.startsWith(getNavLink('/posts'))
+  ? 'article'
+  : 'website'
 
 let customIconURL: string | undefined
 if (database.Icon && database.Icon.Type === 'file') {
@@ -58,8 +67,8 @@ if (profilePost?.FeaturedImage?.Url) {
 }
 ---
 
-<!DOCTYPE html>
-<html lang="en" prefix="og: https://ogp.me/ns#">
+<!doctype html>
+<html lang="ja" prefix="og: https://ogp.me/ns#">
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="max-image-preview:large" />
@@ -79,27 +88,34 @@ if (profilePost?.FeaturedImage?.Url) {
     <meta name="twitter:description" content={effectiveDescription} />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content={ogImage || siteOGImage} />
-    <meta name="google-adsense-account" content="ca-pub-7004556551724349">
+    <meta name="google-adsense-account" content="ca-pub-7004556551724349" />
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.css"
       integrity="sha384-vKruj+a13U8yHIkAyGgK1J3ArTLzrFGBbBc0tDp4ad/EyewESeXE/Iv67Aj8gKZ0"
       crossorigin="anonymous"
     />
-    <!--Google Font-->
-    <link href="https://fonts.googleapis.com/css?family=M+PLUS+Rounded+1c" rel="stylesheet">
+    <!--Google Font Optimization-->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
     <slot name="head-append" />
   </head>
   <body>
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6921846261223866"
-    crossorigin="anonymous"></script>
+    <script
+      async
+      src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6921846261223866"
+      crossorigin="anonymous"></script>
     <GoogleAnalytics trackingId={PUBLIC_GA_TRACKING_ID} />
-    
+
     <Header />
-    
+
     <div class="site-container">
       <slot name="hero" />
-      
+
       <main class="main-content">
         <slot name="main" />
       </main>
@@ -143,24 +159,26 @@ if (profilePost?.FeaturedImage?.Url) {
     --gap-double: 2rem;
 
     /* ウォームカラーパレット */
-    --bg: #FDFBF7;           /* クリームホワイト */
-    --fg: #2D2A26;           /* ダークブラウン */
-    --accents-1: #E07A3D;    /* テラコッタ（メインアクセント） */
-    --accents-2: #8B7355;    /* モカ（サブテキスト） */
-    --accents-3: #5C5650;    /* グレーブラウン */
-    --border-color: #E8E2D9; /* サンド */
-    --card-bg: #FFFFFF;      /* カード背景 */
-    --hover-bg: #F5F0E8;     /* ホバー背景 */
-    --geist-foreground: #2D2A26;
+    --bg: #fdfbf7; /* クリームホワイト */
+    --fg: #2d2a26; /* ダークブラウン */
+    --accents-1: #e07a3d; /* テラコッタ（メインアクセント） */
+    --accents-2: #8b7355; /* モカ（サブテキスト） */
+    --accents-3: #5c5650; /* グレーブラウン */
+    --border-color: #e8e2d9; /* サンド */
+    --card-bg: #ffffff; /* カード背景 */
+    --hover-bg: #f5f0e8; /* ホバー背景 */
+    --geist-foreground: #2d2a26;
     --geist-success: #669900;
 
     --radius: 8px;
 
-    --font-sans: 'M PLUS Rounded 1c', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
-      'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
+    --font-sans:
+      'M PLUS Rounded 1c', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+      'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
       'Helvetica Neue', sans-serif;
-    --font-mono: SFMono-Regular, Menlo, Consolas, 'PT Mono', 'Liberation Mono',
-      Courier, monospace;
+    --font-mono:
+      SFMono-Regular, Menlo, Consolas, 'PT Mono', 'Liberation Mono', Courier,
+      monospace;
   }
 
   * {
@@ -181,14 +199,29 @@ if (profilePost?.FeaturedImage?.Url) {
     min-height: 100vh;
     background: var(--bg);
     color: var(--fg);
-    font-family: 'M PLUS Rounded 1c', ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI',
-      Helvetica, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN',
-      'Hiragino Sans GB', メイリオ, Meiryo, 'Apple Color Emoji', Arial,
-      sans-serif, 'Segoe UI Emoji', 'Segoe UI Symbol';
+    font-family:
+      'M PLUS Rounded 1c',
+      ui-sans-serif,
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
+      Helvetica,
+      'Hiragino Sans',
+      'Hiragino Kaku Gothic ProN',
+      'Hiragino Sans GB',
+      メイリオ,
+      Meiryo,
+      'Apple Color Emoji',
+      Arial,
+      sans-serif,
+      'Segoe UI Emoji',
+      'Segoe UI Symbol';
 
     /*background-image: radial-gradient(#ddd 1px, transparent 1px),
       radial-gradient(#ddd 1px, transparent 1px);*/
-    background-position: 0 0, 25px 25px;
+    background-position:
+      0 0,
+      25px 25px;
     background-attachment: fixed;
     background-size: 50px 50px;
 

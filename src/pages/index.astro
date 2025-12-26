@@ -64,6 +64,29 @@ const isNew = (date: string) => {
 }
 ---
 
+<!-- WebSite スキーマ (構造化データ) -->
+<script
+  type="application/ld+json"
+  set:html={JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'urapro.dev',
+    url: Astro.site?.toString() || 'https://urapro.dev',
+    description:
+      'プログラマーあでぃによるWeb開発技術、プログラミングTIPS、読書記録を発信するブログ',
+    author: {
+      '@type': 'Person',
+      name: 'あでぃ',
+      url: 'https://x.com/tk_adio',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'urapro.dev',
+    },
+  })}
+  slot="head-append"
+/>
+
 <Layout
   title="Home"
   path="/"

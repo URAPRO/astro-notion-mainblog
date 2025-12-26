@@ -1,11 +1,23 @@
 import { generateSitemap } from '../lib/generate-sitemap'
 import { getAllPosts } from '../lib/notion/client'
-import { getPostLink } from '../lib/blog-helpers'
+import { getPostLink, getNavLink } from '../lib/blog-helpers'
 
 export async function GET() {
   const [posts] = await Promise.all([getAllPosts()])
 
-  const sitemapItems = posts.map((post) => {
+  // 固定ページを追加
+  const staticPages = [
+    {
+      loc: new URL('/', import.meta.env.SITE).toString(),
+      lastmod: new Date(), // トップページは常に最新
+    },
+    {
+      loc: new URL(getNavLink('/posts'), import.meta.env.SITE).toString(),
+      lastmod: new Date(), // 記事一覧も常に最新
+    },
+  ]
+
+  const postItems = posts.map((post) => {
     const updateDate = post.UpdateDate ? new Date(post.UpdateDate) : null
     const lastmod = updateDate || new Date(post.Date)
 
@@ -14,6 +26,8 @@ export async function GET() {
       lastmod,
     }
   })
+
+  const sitemapItems = [...staticPages, ...postItems]
 
   const sitemap = generateSitemap(sitemapItems)
 

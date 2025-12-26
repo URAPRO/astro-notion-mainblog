@@ -4,9 +4,13 @@ import { filePath } from '../lib/blog-helpers'
 export interface Props {
   post: Post
   enableLink: boolean
+  altText?: string // Optional custom alt text, defaults to post title
 }
 
-const { post} = Astro.props
+const { post, altText } = Astro.props
+
+// alt属性はカスタムテキストまたは記事タイトルを使用
+const imageAltText = altText || post.Title || 'アイキャッチ画像'
 
 let imageUrl = ''
 let webpUrl = ''
@@ -18,17 +22,17 @@ if (post.FeaturedImage && post.FeaturedImage.Url) {
   } else {
     const originalPath = filePath(new URL(post.FeaturedImage.Url))
     imageUrl = originalPath
-    
+
     // WebPとサムネイルのパスを生成
     const pathParts = originalPath.split('.')
     const ext = pathParts.pop()
     const basePath = pathParts.join('.')
-    
+
     // WebPファイルが存在する可能性があるパス
     if (ext && ext.toLowerCase() !== 'webp') {
       webpUrl = `${basePath}.webp`
     }
-    
+
     // サムネイルのパス
     thumbnailUrl = `${basePath}-thumb.webp`
   }
@@ -36,14 +40,13 @@ if (post.FeaturedImage && post.FeaturedImage.Url) {
 ---
 
 {
-  imageUrl &&
-    (
+  imageUrl && (
     <div class="post-featured-image">
       <picture>
         {webpUrl && <source srcset={webpUrl} type="image/webp" />}
-        <img 
-          src={imageUrl} 
-          alt="Featured image of the post" 
+        <img
+          src={imageUrl}
+          alt={imageAltText}
           loading="lazy"
           decoding="async"
           data-src={imageUrl}
@@ -52,10 +55,10 @@ if (post.FeaturedImage && post.FeaturedImage.Url) {
         />
       </picture>
       <noscript>
-        <img src={imageUrl} alt="Featured image of the post" />
+        <img src={imageUrl} alt={imageAltText} />
       </noscript>
     </div>
-    )
+  )
 }
 
 <style>
@@ -63,12 +66,12 @@ if (post.FeaturedImage && post.FeaturedImage.Url) {
     padding: 0;
     overflow: hidden;
     aspect-ratio: 16 / 9;
-    background: linear-gradient(135deg, #F5F0E8 0%, #EDE5DA 100%);
+    background: linear-gradient(135deg, #f5f0e8 0%, #ede5da 100%);
     width: 100%;
     height: 100%;
     position: relative;
   }
-  
+
   .post-featured-image picture,
   .post-featured-image img {
     display: block;
@@ -76,16 +79,18 @@ if (post.FeaturedImage && post.FeaturedImage.Url) {
     height: 100%;
     object-fit: cover;
   }
-  
+
   .post-featured-image img {
-    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-in-out;
+    transition:
+      transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+      opacity 0.3s ease-in-out;
   }
-  
+
   .post-featured-image img.lazy-loading {
     filter: blur(5px);
     opacity: 0.8;
   }
-  
+
   .post-featured-image img.lazy-loaded {
     filter: blur(0);
     opacity: 1;
@@ -95,47 +100,50 @@ if (post.FeaturedImage && post.FeaturedImage.Url) {
 <script>
   // レイジーローディングの改善版実装
   if ('IntersectionObserver' in window) {
-    const lazyImages = document.querySelectorAll('img.lazy-image');
-    
-    const imageObserver = new IntersectionObserver((entries, observer) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const img = entry.target as HTMLImageElement;
-          const thumbnail = img.getAttribute('data-thumbnail');
-          const fullSrc = img.getAttribute('data-src');
-          
-          // サムネイルが存在する場合は、まずサムネイルを読み込む
-          if (thumbnail && fullSrc) {
-            img.classList.add('lazy-loading');
-            
-            // サムネイルを読み込む
-            const thumbnailImg = new Image();
-            thumbnailImg.onload = () => {
-              img.src = thumbnail;
-              
-              // フルサイズ画像を読み込む
-              const fullImg = new Image();
-              fullImg.onload = () => {
-                img.src = fullSrc;
-                img.classList.remove('lazy-loading');
-                img.classList.add('lazy-loaded');
-              };
-              fullImg.src = fullSrc;
-            };
-            thumbnailImg.src = thumbnail;
-          } else if (fullSrc) {
-            // サムネイルがない場合は直接フルサイズを読み込む
-            img.src = fullSrc;
-            img.classList.add('lazy-loaded');
+    const lazyImages = document.querySelectorAll('img.lazy-image')
+
+    const imageObserver = new IntersectionObserver(
+      (entries, observer) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const img = entry.target as HTMLImageElement
+            const thumbnail = img.getAttribute('data-thumbnail')
+            const fullSrc = img.getAttribute('data-src')
+
+            // サムネイルが存在する場合は、まずサムネイルを読み込む
+            if (thumbnail && fullSrc) {
+              img.classList.add('lazy-loading')
+
+              // サムネイルを読み込む
+              const thumbnailImg = new Image()
+              thumbnailImg.onload = () => {
+                img.src = thumbnail
+
+                // フルサイズ画像を読み込む
+                const fullImg = new Image()
+                fullImg.onload = () => {
+                  img.src = fullSrc
+                  img.classList.remove('lazy-loading')
+                  img.classList.add('lazy-loaded')
+                }
+                fullImg.src = fullSrc
+              }
+              thumbnailImg.src = thumbnail
+            } else if (fullSrc) {
+              // サムネイルがない場合は直接フルサイズを読み込む
+              img.src = fullSrc
+              img.classList.add('lazy-loaded')
+            }
+
+            observer.unobserve(img)
           }
-          
-          observer.unobserve(img);
-        }
-      });
-    }, {
-      rootMargin: '50px'
-    });
-    
-    lazyImages.forEach(img => imageObserver.observe(img));
+        })
+      },
+      {
+        rootMargin: '50px',
+      }
+    )
+
+    lazyImages.forEach((img) => imageObserver.observe(img))
   }
 </script>
