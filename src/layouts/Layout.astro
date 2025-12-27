@@ -128,12 +128,19 @@ if (profilePost?.FeaturedImage?.Url) {
       />
     </noscript>
     <slot name="head-append" />
+    <slot name="preload" />
   </head>
   <body>
-    <script
-      async
-      src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6921846261223866"
-      crossorigin="anonymous"></script>
+    {/* Google Ads: 初期レンダリング後に読み込み */}
+    <script>
+      window.addEventListener('load', () => {
+        const s = document.createElement('script')
+        s.src =
+          'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6921846261223866'
+        s.crossOrigin = 'anonymous'
+        document.body.appendChild(s)
+      })
+    </script>
     <GoogleAnalytics trackingId={PUBLIC_GA_TRACKING_ID} />
 
     <Header />
@@ -150,7 +157,7 @@ if (profilePost?.FeaturedImage?.Url) {
     <SearchModal />
     {
       ENABLE_LIGHTBOX && (
-        <script src={getStaticFilePath('/scripts/fslightbox.js')} />
+        <script defer src={getStaticFilePath('/scripts/fslightbox.js')} />
       )
     }
   </body>
