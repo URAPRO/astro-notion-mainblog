@@ -132,12 +132,13 @@ if (profilePost?.FeaturedImage?.Url) {
   </head>
   <body>
     {/* Google Ads: 初期レンダリング後に読み込み */}
-    <script>
+    <script is:inline>
       window.addEventListener('load', () => {
         const s = document.createElement('script')
         s.src =
           'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6921846261223866'
         s.crossOrigin = 'anonymous'
+        s.async = true
         document.body.appendChild(s)
       })
     </script>
