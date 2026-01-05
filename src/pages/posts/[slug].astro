@@ -117,10 +117,14 @@ if (currentPostIndex !== -1) {
   }
 }
 
+// FeaturedImageがある場合は優先、なければ動的OGP画像を使用
 let ogImage = '';
 if (post.FeaturedImage && post.FeaturedImage.Url) {
-  // Convert URL object to string for ogImage
+  // FeaturedImageがある場合はローカルにダウンロードされたファイルを使用
   ogImage = new URL(filePath(new URL(post.FeaturedImage.Url)), Astro.site).toString();
+} else {
+  // FeaturedImageがない場合は動的OGP画像を使用
+  ogImage = new URL(`/og/${post.Slug}.png`, Astro.site).toString();
 }
 
 // JSON-LD データの生成
