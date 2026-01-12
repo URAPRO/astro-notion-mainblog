@@ -143,9 +143,11 @@ const featuredImageUrl = post ? getFeaturedImageUrl(post) : null
     font-size: 12px;
     line-height: 16px;
     opacity: 0.8;
-    height: 32px;
     overflow: hidden;
     color: var(--accents-2, #8b7355);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
   }
 
   .card-meta {
@@ -187,6 +189,7 @@ const featuredImageUrl = post ? getFeaturedImageUrl(post) : null
       order: -1;
     }
     .card-content {
+      flex: none;
       padding: 12px;
     }
     .card-title {
