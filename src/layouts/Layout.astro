@@ -127,6 +127,8 @@ if (profilePost?.FeaturedImage?.Url) {
         rel="stylesheet"
       />
     </noscript>
+    <!-- Google Analytics -->
+    <GoogleAnalytics trackingId={PUBLIC_GA_TRACKING_ID} />
     <slot name="head-append" />
     <slot name="preload" />
   </head>
@@ -142,7 +144,6 @@ if (profilePost?.FeaturedImage?.Url) {
         document.body.appendChild(s)
       })
     </script>
-    <GoogleAnalytics trackingId={PUBLIC_GA_TRACKING_ID} />
 
     <Header />
 
