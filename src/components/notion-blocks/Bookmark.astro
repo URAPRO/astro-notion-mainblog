@@ -142,9 +142,11 @@ try {
     font-size: 12px;
     line-height: 16px;
     opacity: 0.8;
-    max-height: 48px;
     overflow: hidden;
     color: var(--accents-2, #8b7355);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
   }
 
   .bookmark > a > div:first-child > div:last-child {
