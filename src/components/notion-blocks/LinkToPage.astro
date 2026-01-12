@@ -34,11 +34,14 @@ function getFeaturedImageUrl(post: Post): string | null {
   }
   return null
 }
+
+// Pre-compute featured image URL to avoid repeated function calls
+const featuredImageUrl = post ? getFeaturedImageUrl(post) : null
 ---
 
 {post ? (
   <div class="link-to-page-card">
-    <a href={getPostLink(post)} target={post.ExternalLink ? "_blank" : undefined}>
+    <a href={getPostLink(post)}>
       <div class="card-content">
         <div class="card-title">
           {isEmoji(post.Icon) && <span class="card-icon">{post.Icon.Emoji}</span>}
@@ -50,9 +53,9 @@ function getFeaturedImageUrl(post: Post): string | null {
         </div>
       </div>
       <div class="card-image">
-        {getFeaturedImageUrl(post) && (
+        {featuredImageUrl && (
           <img
-            src={getFeaturedImageUrl(post)}
+            src={featuredImageUrl}
             alt={post.Title}
             loading="lazy"
           />
@@ -92,7 +95,7 @@ function getFeaturedImageUrl(post: Post): string | null {
     user-select: none;
     background: var(--card-bg, #ffffff);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    transition: all 0.3s ease-in-out;
+    transition: box-shadow 0.3s ease-in-out, border-color 0.3s ease-in-out, transform 0.3s ease-in-out;
   }
 
   .link-to-page-card > a:hover {
@@ -166,7 +169,7 @@ function getFeaturedImageUrl(post: Post): string | null {
   }
 
   .card-image > img {
-    position: absolute !important;
+    position: absolute;
     width: 100%;
     height: 100%;
     object-fit: cover;
