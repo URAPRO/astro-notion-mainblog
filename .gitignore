@@ -29,3 +29,4 @@ tmp/
 
 public/notion/*
 !public/notion/.gitkeep
+.claude/settings.local.json
