@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:urapro.dev)",
+      "Bash(npm run dev:*)",
+      "Bash(git checkout:*)",
+      "Bash(gh pr edit:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh api:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr comment:*)",
+      "Bash(npm run build:*)"
+    ]
+  }
+}
