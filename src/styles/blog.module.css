@@ -29,7 +29,6 @@
   max-width: 100%;
   box-sizing: border-box;
   overflow-wrap: break-word;
-  word-wrap: break-word;
   min-width: 0;
 }
 
@@ -49,6 +48,10 @@
 /* 410px以下の極小画面では更にパディングを小さく */
 @media (max-width: 410px) {
   .main {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .postPage .main {
     padding-left: 16px;
     padding-right: 16px;
   }
@@ -98,8 +101,6 @@
   max-width: 100%;
   box-sizing: border-box;
   overflow-wrap: break-word;
-  word-wrap: break-word;
-  word-break: break-word;
 }
 
 .post footer {
@@ -207,14 +208,6 @@
     max-width: 100%;
     box-sizing: border-box;
     overflow-wrap: break-word;
-    word-wrap: break-word;
-  }
-}
-
-@media (max-width: 410px) {
-  .postPage .main {
-    padding-left: 16px;
-    padding-right: 16px;
   }
 }
 
@@ -290,11 +283,6 @@
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(224, 122, 61, 0.35);
   color: #fff;
-}
-
-.postsPage section {
-  /* フラット化して grid の子要素として扱う */
-  display: contents;
 }
 
 .postsPage h2 {
