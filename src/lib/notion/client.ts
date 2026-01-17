@@ -751,7 +751,7 @@ async function _buildBlock(blockObject: responses.BlockObject): Promise<Block> {
           blockObject.image.external
         ) {
           imageToBuild.External = { Url: blockObject.image.external.url }
-          if (imageToBuild.External.Url) {
+          if (imageToBuild.External.Url && !import.meta.env.DEV) {
             const dims = await getImageDimensions(imageToBuild.External.Url)
             imageToBuild.Width = dims.width
             imageToBuild.Height = dims.height
@@ -765,7 +765,7 @@ async function _buildBlock(blockObject: responses.BlockObject): Promise<Block> {
             Url: blockObject.image.file.url,
             ExpiryTime: blockObject.image.file.expiry_time,
           }
-          if (imageToBuild.File.Url) {
+          if (imageToBuild.File.Url && !import.meta.env.DEV) {
             const dims = await getImageDimensions(imageToBuild.File.Url)
             imageToBuild.Width = dims.width
             imageToBuild.Height = dims.height
@@ -1110,7 +1110,7 @@ async function _buildPost(pageObject: responses.PageObject): Promise<Post> {
     const coverUrl = pageObject.cover.external?.url || pageObject.cover?.file?.url || '';
     let coverWidth: number | undefined;
     let coverHeight: number | undefined;
-    if (coverUrl) {
+    if (coverUrl && !import.meta.env.DEV) {
       const dims = await getImageDimensions(coverUrl);
       coverWidth = dims.width;
       coverHeight = dims.height;
@@ -1132,7 +1132,7 @@ async function _buildPost(pageObject: responses.PageObject): Promise<Post> {
     const featuredImageUrl = file.external?.url || file.file?.url || '';
     let featuredImageWidth: number | undefined;
     let featuredImageHeight: number | undefined;
-    if (featuredImageUrl) {
+    if (featuredImageUrl && !import.meta.env.DEV) {
       const dims = await getImageDimensions(featuredImageUrl);
       featuredImageWidth = dims.width;
       featuredImageHeight = dims.height;
