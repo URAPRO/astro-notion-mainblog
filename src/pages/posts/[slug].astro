@@ -24,6 +24,7 @@ import PostReadingTime from '../../components/PostReadingTime.astro'
 import PostTags from '../../components/PostTags.astro'
 import PostTitle from '../../components/PostTitle.astro'
 import PostBody from '../../components/PostBody.astro'
+import PostFeaturedImage from '../../components/PostFeaturedImage.astro'
 import PostRelativeLink from '../../components/PostRelativeLink.astro'
 import ScrollProgressBar from '../../components/ScrollProgressBar.astro';
 import FloatingTableOfContents from '../../components/FloatingTableOfContents.astro';
@@ -68,44 +69,46 @@ const fileAtacchedBlocks = extractTargetBlocks('image', blocks)
     return imageOrFile && imageOrFile.File && imageOrFile.File.Url;
   });
 
-// Download files
-await Promise.all(
-  fileAtacchedBlocks
-    .map(async (block) => {
-      // Access File property safely
-      const fileDetails = block.Image?.File || block.File?.File;
-      if (!fileDetails || !fileDetails.ExpiryTime) {
-        // If ExpiryTime is not available, or fileDetails is undefined,
-        // it implies we might need to fetch the block again or handle as an error.
-        // For now, assume getBlock(block.Id) is the fallback.
-        return getBlock(block.Id);
-      }
-      const expiryTime = fileDetails.ExpiryTime;
-      if (Date.parse(expiryTime) > Date.now()) {
-        return Promise.resolve(block);
-      }
-      return getBlock(block.Id);
-    })
-    .map((promise, index) =>
-      promise.then((block) => {
-        let url: URL;
+// Download files (skip in development for faster page loads)
+if (!import.meta.env.DEV) {
+  await Promise.all(
+    fileAtacchedBlocks
+      .map(async (block) => {
         // Access File property safely
         const fileDetails = block.Image?.File || block.File?.File;
-        if (!fileDetails || !fileDetails.Url) {
-          console.log('Invalid file URL after getBlock or from cache');
-          return Promise.reject(new Error('Invalid file URL'));
+        if (!fileDetails || !fileDetails.ExpiryTime) {
+          // If ExpiryTime is not available, or fileDetails is undefined,
+          // it implies we might need to fetch the block again or handle as an error.
+          // For now, assume getBlock(block.Id) is the fallback.
+          return getBlock(block.Id);
         }
-        try {
-          url = new URL(fileDetails.Url);
-        } catch {
-          console.log('Invalid file URL: ', fileDetails.Url);
-          return Promise.reject(new Error('Malformed file URL'));
+        const expiryTime = fileDetails.ExpiryTime;
+        if (Date.parse(expiryTime) > Date.now()) {
+          return Promise.resolve(block);
         }
-        return Promise.resolve({ url, index });
+        return getBlock(block.Id);
       })
-    )
-    .map((promise) => promise.then(({ url, index }) => downloadFile(url, slug, index + 1)))
-);
+      .map((promise, index) =>
+        promise.then((block) => {
+          let url: URL;
+          // Access File property safely
+          const fileDetails = block.Image?.File || block.File?.File;
+          if (!fileDetails || !fileDetails.Url) {
+            console.log('Invalid file URL after getBlock or from cache');
+            return Promise.reject(new Error('Invalid file URL'));
+          }
+          try {
+            url = new URL(fileDetails.Url);
+          } catch {
+            console.log('Invalid file URL: ', fileDetails.Url);
+            return Promise.reject(new Error('Malformed file URL'));
+          }
+          return Promise.resolve({ url, index });
+        })
+      )
+      .map((promise) => promise.then(({ url, index }) => downloadFile(url, slug, index + 1)))
+  );
+}
 
 const currentPostIndex = allPosts.findIndex((post) => post.Slug === slug);
 let prevPost = null;
@@ -200,6 +203,11 @@ const breadcrumbLd = {
     <ScrollProgressBar />
     <FloatingTableOfContents headings={headings} />
     <div class={styles.post}>
+      {post.FeaturedImage && post.FeaturedImage.Url && (
+        <div class="post-hero-image">
+          <PostFeaturedImage post={post} enableLink={false} />
+        </div>
+      )}
       <PostTitle post={post} enableLink={false} />
       <div style="display: flex; flex-wrap: wrap; column-gap: 1em; align-items: baseline;">
         <PostDate post={post} />
@@ -235,3 +243,23 @@ const breadcrumbLd = {
     </div>
   </div>
 </Layout>
+
+<style>
+  .post-hero-image {
+    margin-bottom: 1.5rem;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  }
+
+  .post-hero-image :global(.post-featured-image) {
+    border-radius: 0;
+  }
+
+  @media (max-width: 640px) {
+    .post-hero-image {
+      margin-bottom: 1.2rem;
+      border-radius: 8px;
+    }
+  }
+</style>
