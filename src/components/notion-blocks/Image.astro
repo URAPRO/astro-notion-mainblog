@@ -91,19 +91,46 @@ if (block.Image?.Caption && block.Image.Caption.length > 0) {
   }
 }
 
+// 名前付きサイズのマッピング
+const namedSizes: Record<string, string> = {
+  'xs': '150px',
+  's': '300px',
+  'm': '400px',
+  'l': '500px',
+  'xl': '700px',
+}
+
 // width と height の決定
 let finalWidth: number | undefined
 let finalHeight: number | undefined
+let styleWidth: string | undefined
 
 const originalWidth = block.Image?.Width
 const originalHeight = block.Image?.Height
 
-if (specifiedWidthString && originalWidth && originalHeight) {
-  finalWidth = parseInt(specifiedWidthString, 10)
-  if (!isNaN(finalWidth)) {
-    finalHeight = Math.round((originalHeight / originalWidth) * finalWidth)
-  } else {
-    finalWidth = undefined
+if (specifiedWidthString) {
+  // 名前付きサイズをチェック
+  const lowerSize = specifiedWidthString.toLowerCase().replace(/px$/, '')
+  if (namedSizes[lowerSize]) {
+    styleWidth = namedSizes[lowerSize]
+    // 名前付きサイズの場合もHTML属性用に数値を計算
+    const numericMatch = namedSizes[lowerSize].match(/^(\d+)px$/)
+    if (numericMatch && originalWidth && originalHeight) {
+      finalWidth = parseInt(numericMatch[1], 10)
+      finalHeight = Math.round((originalHeight / originalWidth) * finalWidth)
+    } else if (originalWidth && originalHeight) {
+      finalWidth = originalWidth
+      finalHeight = originalHeight
+    }
+  } else if (originalWidth && originalHeight) {
+    // 数値指定の場合
+    finalWidth = parseInt(specifiedWidthString, 10)
+    if (!isNaN(finalWidth)) {
+      finalHeight = Math.round((originalHeight / originalWidth) * finalWidth)
+      styleWidth = `${finalWidth}px`
+    } else {
+      finalWidth = undefined
+    }
   }
 } else if (originalWidth && originalHeight) {
   finalWidth = originalWidth
@@ -114,7 +141,7 @@ if (specifiedWidthString && originalWidth && originalHeight) {
 <figure class="image">
   {
     imageSrc && (
-      <div>
+      <div style={styleWidth ? `max-width: ${styleWidth}` : undefined}>
         <div>
           {ENABLE_LIGHTBOX ? (
             <a data-fslightbox href={webpSrc || imageSrc} data-type="image">
@@ -175,6 +202,7 @@ if (specifiedWidthString && originalWidth && originalHeight) {
   .image > div > div img {
     display: block;
     max-width: 100%;
+    height: auto;
     /* 縮小表示時の品質向上 */
     image-rendering: -webkit-optimize-contrast;
     image-rendering: crisp-edges;

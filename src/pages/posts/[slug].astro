@@ -60,13 +60,14 @@ const headings = blocks.filter((block) =>
 
 const fileAtacchedBlocks = extractTargetBlocks('image', blocks)
   .concat(extractTargetBlocks('file', blocks))
+  .concat(extractTargetBlocks('video', blocks))
   .filter((block) => {
     if (!block) {
       return false
     }
-    const imageOrFile = block.Image || block.File;
+    const imageOrFileOrVideo = block.Image || block.File || block.Video;
     // Ensure File object and its Url exist
-    return imageOrFile && imageOrFile.File && imageOrFile.File.Url;
+    return imageOrFileOrVideo && imageOrFileOrVideo.File && imageOrFileOrVideo.File.Url;
   });
 
 // Download files (skip in development for faster page loads)
@@ -74,8 +75,8 @@ if (!import.meta.env.DEV) {
   await Promise.all(
     fileAtacchedBlocks
       .map(async (block) => {
-        // Access File property safely
-        const fileDetails = block.Image?.File || block.File?.File;
+        // Access File property safely (including Video)
+        const fileDetails = block.Image?.File || block.File?.File || block.Video?.File;
         if (!fileDetails || !fileDetails.ExpiryTime) {
           // If ExpiryTime is not available, or fileDetails is undefined,
           // it implies we might need to fetch the block again or handle as an error.
@@ -91,8 +92,8 @@ if (!import.meta.env.DEV) {
       .map((promise, index) =>
         promise.then((block) => {
           let url: URL;
-          // Access File property safely
-          const fileDetails = block.Image?.File || block.File?.File;
+          // Access File property safely (including Video)
+          const fileDetails = block.Image?.File || block.File?.File || block.Video?.File;
           if (!fileDetails || !fileDetails.Url) {
             console.log('Invalid file URL after getBlock or from cache');
             return Promise.reject(new Error('Invalid file URL'));

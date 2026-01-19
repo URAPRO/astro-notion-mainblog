@@ -736,6 +736,15 @@ async function _buildBlock(blockObject: responses.BlockObject): Promise<Block> {
           blockObject.video.external
         ) {
           video.External = { Url: blockObject.video.external.url }
+        } else if (
+          blockObject.video.type === 'file' &&
+          blockObject.video.file
+        ) {
+          video.File = {
+            Type: blockObject.video.type,
+            Url: blockObject.video.file.url,
+            ExpiryTime: blockObject.video.file.expiry_time,
+          }
         }
         block.Video = video
       }
