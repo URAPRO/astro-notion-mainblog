@@ -9,30 +9,35 @@ export interface Props {
 
 const { block } = Astro.props
 
-let url: URL
-try {
-  url = new URL(block.Video.External?.Url)
-} catch (err) {
-  console.log(err)
+let url: URL | null = null
+const videoUrl = block.Video?.External?.Url || block.Video?.File?.Url
+if (videoUrl) {
+  try {
+    url = new URL(videoUrl)
+  } catch (err) {
+    console.log('Invalid video URL:', videoUrl, err)
+  }
 }
 ---
 
-<div class="video">
-  <div>
-    {
-      isYouTubeURL(url) && (
-        <iframe
-          src={`https://www.youtube.com/embed/${parseYouTubeVideoId(url)}`}
-          title="YouTube video player"
-          frameborder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowfullscreen
-        />
-      )
-    }
+{url ? (
+  <div class="video">
+    <div>
+      {
+        isYouTubeURL(url) && (
+          <iframe
+            src={`https://www.youtube.com/embed/${parseYouTubeVideoId(url)}`}
+            title="YouTube video player"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen
+          />
+        )
+      }
+    </div>
+    <Caption richTexts={block.Video?.Caption} />
   </div>
-  <Caption richTexts={block.Video.Caption} />
-</div>
+) : null}
 
 <style>
   .video div:first-child {
