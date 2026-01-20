@@ -4,17 +4,10 @@ import Layout from '../../layouts/Layout.astro'
 import NoContents from '../../components/NoContents.astro'
 import PostFeaturedImage from '../../components/PostFeaturedImage.astro'
 import { getPostLink, getDateStr } from '../../lib/blog-helpers.ts'
+import { getPlatform, platformConfig, isNew } from '../../lib/helpers/platform'
 
 const allPosts = await getAllBlogPosts()
 const allTags = await getAllTags()
-
-// プラットフォームを判定するヘルパー
-const getPlatform = (post: (typeof allPosts)[0]) => {
-  if (!post.ExternalLink) return 'blog'
-  if (post.ExternalLink.includes('note.com')) return 'note'
-  if (post.ExternalLink.includes('zenn.dev')) return 'zenn'
-  return 'external'
-}
 
 // プラットフォーム別件数
 const blogCount = allPosts.filter((p) => getPlatform(p) === 'blog').length
@@ -52,24 +45,9 @@ const tagsByPlatform = {
     .filter((t) => t.count > 0),
 }
 
-const platformConfig = {
-  blog: { icon: '🏠', label: 'Blog', color: '#E07A3D' },
-  note: { icon: '✍️', label: 'note', color: '#41c9b4' },
-  zenn: { icon: '💻', label: 'Zenn', color: '#3EA8FF' },
-  external: { icon: '🔗', label: 'External', color: '#888' },
-}
-
 // 初期表示件数
 const INITIAL_COUNT = 12
 const LOAD_MORE_COUNT = 9
-
-// 7日以内かどうかを判定
-const isNew = (date: string) => {
-  const postDate = new Date(date)
-  const now = new Date()
-  const diffDays = (now.getTime() - postDate.getTime()) / (1000 * 60 * 60 * 24)
-  return diffDays <= 7
-}
 ---
 
 <Layout
