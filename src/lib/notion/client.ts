@@ -660,6 +660,290 @@ export async function getDatabase(): Promise<Database> {
   return database
 }
 
+// Block builder type definition
+type BlockBuilder = (
+  blockObject: responses.BlockObject,
+  block: Block
+) => Promise<void> | void
+
+// Block builders for each block type
+const blockBuilders: Record<string, BlockBuilder> = {
+  paragraph: (obj, block) => {
+    if (obj.paragraph) {
+      block.Paragraph = {
+        RichTexts: obj.paragraph.rich_text.map(_buildRichText),
+        Color: obj.paragraph.color,
+      }
+    }
+  },
+
+  heading_1: (obj, block) => {
+    if (obj.heading_1) {
+      block.Heading1 = {
+        RichTexts: obj.heading_1.rich_text.map(_buildRichText),
+        Color: obj.heading_1.color,
+        IsToggleable: obj.heading_1.is_toggleable,
+      }
+    }
+  },
+
+  heading_2: (obj, block) => {
+    if (obj.heading_2) {
+      block.Heading2 = {
+        RichTexts: obj.heading_2.rich_text.map(_buildRichText),
+        Color: obj.heading_2.color,
+        IsToggleable: obj.heading_2.is_toggleable,
+      }
+    }
+  },
+
+  heading_3: (obj, block) => {
+    if (obj.heading_3) {
+      block.Heading3 = {
+        RichTexts: obj.heading_3.rich_text.map(_buildRichText),
+        Color: obj.heading_3.color,
+        IsToggleable: obj.heading_3.is_toggleable,
+      }
+    }
+  },
+
+  bulleted_list_item: (obj, block) => {
+    if (obj.bulleted_list_item) {
+      block.BulletedListItem = {
+        RichTexts: obj.bulleted_list_item.rich_text.map(_buildRichText),
+        Color: obj.bulleted_list_item.color,
+      }
+    }
+  },
+
+  numbered_list_item: (obj, block) => {
+    if (obj.numbered_list_item) {
+      block.NumberedListItem = {
+        RichTexts: obj.numbered_list_item.rich_text.map(_buildRichText),
+        Color: obj.numbered_list_item.color,
+      }
+    }
+  },
+
+  to_do: (obj, block) => {
+    if (obj.to_do) {
+      block.ToDo = {
+        RichTexts: obj.to_do.rich_text.map(_buildRichText),
+        Checked: obj.to_do.checked,
+        Color: obj.to_do.color,
+      }
+    }
+  },
+
+  video: (obj, block) => {
+    if (obj.video) {
+      const video: Video = {
+        Caption: obj.video.caption?.map(_buildRichText) || [],
+        Type: obj.video.type,
+      }
+      if (obj.video.type === 'external' && obj.video.external) {
+        video.External = { Url: obj.video.external.url }
+      } else if (obj.video.type === 'file' && obj.video.file) {
+        video.File = {
+          Type: obj.video.type,
+          Url: obj.video.file.url,
+          ExpiryTime: obj.video.file.expiry_time,
+        }
+      }
+      block.Video = video
+    }
+  },
+
+  image: async (obj, block) => {
+    if (obj.image) {
+      const imageToBuild: Image = {
+        Caption: obj.image.caption?.map(_buildRichText) || [],
+        Type: obj.image.type,
+      }
+      if (obj.image.type === 'external' && obj.image.external) {
+        imageToBuild.External = { Url: obj.image.external.url }
+        if (imageToBuild.External.Url && !import.meta.env.DEV) {
+          const dims = await getImageDimensions(imageToBuild.External.Url)
+          imageToBuild.Width = dims.width
+          imageToBuild.Height = dims.height
+        }
+      } else if (obj.image.type === 'file' && obj.image.file) {
+        imageToBuild.File = {
+          Type: obj.image.type,
+          Url: obj.image.file.url,
+          ExpiryTime: obj.image.file.expiry_time,
+        }
+        if (imageToBuild.File.Url && !import.meta.env.DEV) {
+          const dims = await getImageDimensions(imageToBuild.File.Url)
+          imageToBuild.Width = dims.width
+          imageToBuild.Height = dims.height
+          if (imageToBuild.File) {
+            imageToBuild.File.Width = dims.width
+            imageToBuild.File.Height = dims.height
+          }
+        }
+      }
+      block.Image = imageToBuild
+    }
+  },
+
+  file: (obj, block) => {
+    if (obj.file) {
+      const file: File = {
+        Caption: obj.file.caption?.map(_buildRichText) || [],
+        Type: obj.file.type,
+      }
+      if (obj.file.type === 'external' && obj.file.external) {
+        file.External = { Url: obj.file.external.url }
+      } else if (obj.file.type === 'file' && obj.file.file) {
+        file.File = {
+          Type: obj.file.type,
+          Url: obj.file.file.url,
+          ExpiryTime: obj.file.file.expiry_time,
+        }
+      }
+      block.File = file
+    }
+  },
+
+  code: (obj, block) => {
+    if (obj.code) {
+      block.Code = {
+        Caption: obj.code.caption?.map(_buildRichText) || [],
+        RichTexts: obj.code.rich_text.map(_buildRichText),
+        Language: obj.code.language,
+      }
+    }
+  },
+
+  quote: (obj, block) => {
+    if (obj.quote) {
+      block.Quote = {
+        RichTexts: obj.quote.rich_text.map(_buildRichText),
+        Color: obj.quote.color,
+      }
+    }
+  },
+
+  equation: (obj, block) => {
+    if (obj.equation) {
+      block.Equation = {
+        Expression: obj.equation.expression,
+      }
+    }
+  },
+
+  callout: (obj, block) => {
+    if (obj.callout) {
+      let icon: FileObject | Emoji | null = null
+      if (obj.callout.icon) {
+        if (obj.callout.icon.type === 'emoji' && 'emoji' in obj.callout.icon) {
+          icon = {
+            Type: obj.callout.icon.type,
+            Emoji: obj.callout.icon.emoji,
+          }
+        } else if (
+          obj.callout.icon.type === 'external' &&
+          'external' in obj.callout.icon
+        ) {
+          icon = {
+            Type: obj.callout.icon.type,
+            Url: obj.callout.icon.external?.url || '',
+          }
+        }
+      }
+      block.Callout = {
+        RichTexts: obj.callout.rich_text.map(_buildRichText),
+        Icon: icon,
+        Color: obj.callout.color,
+      }
+    }
+  },
+
+  synced_block: (obj, block) => {
+    if (obj.synced_block) {
+      let syncedFrom: SyncedFrom | null = null
+      if (obj.synced_block.synced_from?.block_id) {
+        syncedFrom = {
+          BlockId: obj.synced_block.synced_from.block_id,
+        }
+      }
+      block.SyncedBlock = {
+        SyncedFrom: syncedFrom,
+      }
+    }
+  },
+
+  toggle: (obj, block) => {
+    if (obj.toggle) {
+      block.Toggle = {
+        RichTexts: obj.toggle.rich_text.map(_buildRichText),
+        Color: obj.toggle.color,
+        Children: [],
+      }
+    }
+  },
+
+  embed: (obj, block) => {
+    if (obj.embed) {
+      block.Embed = {
+        Url: obj.embed.url,
+      }
+    }
+  },
+
+  bookmark: (obj, block) => {
+    if (obj.bookmark) {
+      block.Bookmark = {
+        Caption: obj.bookmark.caption?.map(_buildRichText) || [],
+        Url: obj.bookmark.url,
+      }
+    }
+  },
+
+  link_preview: (obj, block) => {
+    if (obj.link_preview) {
+      block.LinkPreview = {
+        Url: obj.link_preview.url,
+      }
+    }
+  },
+
+  table: (obj, block) => {
+    if (obj.table) {
+      block.Table = {
+        TableWidth: obj.table.table_width,
+        HasColumnHeader: obj.table.has_column_header,
+        HasRowHeader: obj.table.has_row_header,
+        Rows: [],
+      }
+    }
+  },
+
+  column_list: (_obj, block) => {
+    block.ColumnList = {
+      Columns: [],
+    }
+  },
+
+  table_of_contents: (obj, block) => {
+    if (obj.table_of_contents) {
+      block.TableOfContents = {
+        Color: obj.table_of_contents.color,
+      }
+    }
+  },
+
+  link_to_page: (obj, block) => {
+    if (obj.link_to_page?.page_id) {
+      block.LinkToPage = {
+        Type: obj.link_to_page.type,
+        PageId: obj.link_to_page.page_id,
+      }
+    }
+  },
+}
+
 async function _buildBlock(blockObject: responses.BlockObject): Promise<Block> {
   const block: Block = {
     Id: blockObject.id,
@@ -667,301 +951,9 @@ async function _buildBlock(blockObject: responses.BlockObject): Promise<Block> {
     HasChildren: blockObject.has_children,
   }
 
-  switch (blockObject.type) {
-    case 'paragraph':
-      if (blockObject.paragraph) {
-        const paragraph: Paragraph = {
-          RichTexts: blockObject.paragraph.rich_text.map(_buildRichText),
-          Color: blockObject.paragraph.color,
-        }
-        block.Paragraph = paragraph
-      }
-      break
-    case 'heading_1':
-      if (blockObject.heading_1) {
-        const heading1: Heading1 = {
-          RichTexts: blockObject.heading_1.rich_text.map(_buildRichText),
-          Color: blockObject.heading_1.color,
-          IsToggleable: blockObject.heading_1.is_toggleable,
-        }
-        block.Heading1 = heading1
-      }
-      break
-    case 'heading_2':
-      if (blockObject.heading_2) {
-        const heading2: Heading2 = {
-          RichTexts: blockObject.heading_2.rich_text.map(_buildRichText),
-          Color: blockObject.heading_2.color,
-          IsToggleable: blockObject.heading_2.is_toggleable,
-        }
-        block.Heading2 = heading2
-      }
-      break
-    case 'heading_3':
-      if (blockObject.heading_3) {
-        const heading3: Heading3 = {
-          RichTexts: blockObject.heading_3.rich_text.map(_buildRichText),
-          Color: blockObject.heading_3.color,
-          IsToggleable: blockObject.heading_3.is_toggleable,
-        }
-        block.Heading3 = heading3
-      }
-      break
-    case 'bulleted_list_item':
-      if (blockObject.bulleted_list_item) {
-        const bulletedListItem: BulletedListItem = {
-          RichTexts:
-            blockObject.bulleted_list_item.rich_text.map(_buildRichText),
-          Color: blockObject.bulleted_list_item.color,
-        }
-        block.BulletedListItem = bulletedListItem
-      }
-      break
-    case 'numbered_list_item':
-      if (blockObject.numbered_list_item) {
-        const numberedListItem: NumberedListItem = {
-          RichTexts:
-            blockObject.numbered_list_item.rich_text.map(_buildRichText),
-          Color: blockObject.numbered_list_item.color,
-        }
-        block.NumberedListItem = numberedListItem
-      }
-      break
-    case 'to_do':
-      if (blockObject.to_do) {
-        const toDo: ToDo = {
-          RichTexts: blockObject.to_do.rich_text.map(_buildRichText),
-          Checked: blockObject.to_do.checked,
-          Color: blockObject.to_do.color,
-        }
-        block.ToDo = toDo
-      }
-      break
-    case 'video':
-      if (blockObject.video) {
-        const video: Video = {
-          Caption: blockObject.video.caption?.map(_buildRichText) || [],
-          Type: blockObject.video.type,
-        }
-        if (
-          blockObject.video.type === 'external' &&
-          blockObject.video.external
-        ) {
-          video.External = { Url: blockObject.video.external.url }
-        } else if (
-          blockObject.video.type === 'file' &&
-          blockObject.video.file
-        ) {
-          video.File = {
-            Type: blockObject.video.type,
-            Url: blockObject.video.file.url,
-            ExpiryTime: blockObject.video.file.expiry_time,
-          }
-        }
-        block.Video = video
-      }
-      break
-    case 'image':
-      if (blockObject.image) {
-        const imageToBuild: Image = {
-          Caption: blockObject.image.caption?.map(_buildRichText) || [],
-          Type: blockObject.image.type,
-        }
-        if (
-          blockObject.image.type === 'external' &&
-          blockObject.image.external
-        ) {
-          imageToBuild.External = { Url: blockObject.image.external.url }
-          if (imageToBuild.External.Url && !import.meta.env.DEV) {
-            const dims = await getImageDimensions(imageToBuild.External.Url)
-            imageToBuild.Width = dims.width
-            imageToBuild.Height = dims.height
-          }
-        } else if (
-          blockObject.image.type === 'file' &&
-          blockObject.image.file
-        ) {
-          imageToBuild.File = {
-            Type: blockObject.image.type,
-            Url: blockObject.image.file.url,
-            ExpiryTime: blockObject.image.file.expiry_time,
-          }
-          if (imageToBuild.File.Url && !import.meta.env.DEV) {
-            const dims = await getImageDimensions(imageToBuild.File.Url)
-            imageToBuild.Width = dims.width
-            imageToBuild.Height = dims.height
-            if (imageToBuild.File) {
-              imageToBuild.File.Width = dims.width
-              imageToBuild.File.Height = dims.height
-            }
-          }
-        }
-        block.Image = imageToBuild
-      }
-      break
-    case 'file':
-      if (blockObject.file) {
-        const file: File = {
-          Caption: blockObject.file.caption?.map(_buildRichText) || [],
-          Type: blockObject.file.type,
-        }
-        if (blockObject.file.type === 'external' && blockObject.file.external) {
-          file.External = { Url: blockObject.file.external.url }
-        } else if (blockObject.file.type === 'file' && blockObject.file.file) {
-          file.File = {
-            Type: blockObject.file.type,
-            Url: blockObject.file.file.url,
-            ExpiryTime: blockObject.file.file.expiry_time,
-          }
-        }
-        block.File = file
-      }
-      break
-    case 'code':
-      if (blockObject.code) {
-        const code: Code = {
-          Caption: blockObject.code.caption?.map(_buildRichText) || [],
-          RichTexts: blockObject.code.rich_text.map(_buildRichText),
-          Language: blockObject.code.language,
-        }
-        block.Code = code
-      }
-      break
-    case 'quote':
-      if (blockObject.quote) {
-        const quote: Quote = {
-          RichTexts: blockObject.quote.rich_text.map(_buildRichText),
-          Color: blockObject.quote.color,
-        }
-        block.Quote = quote
-      }
-      break
-    case 'equation':
-      if (blockObject.equation) {
-        const equation: Equation = {
-          Expression: blockObject.equation.expression,
-        }
-        block.Equation = equation
-      }
-      break
-    case 'callout':
-      if (blockObject.callout) {
-        let icon: FileObject | Emoji | null = null
-        if (blockObject.callout.icon) {
-          if (
-            blockObject.callout.icon.type === 'emoji' &&
-            'emoji' in blockObject.callout.icon
-          ) {
-            icon = {
-              Type: blockObject.callout.icon.type,
-              Emoji: blockObject.callout.icon.emoji,
-            }
-          } else if (
-            blockObject.callout.icon.type === 'external' &&
-            'external' in blockObject.callout.icon
-          ) {
-            icon = {
-              Type: blockObject.callout.icon.type,
-              Url: blockObject.callout.icon.external?.url || '',
-            }
-          }
-        }
-
-        const callout: Callout = {
-          RichTexts: blockObject.callout.rich_text.map(_buildRichText),
-          Icon: icon,
-          Color: blockObject.callout.color,
-        }
-        block.Callout = callout
-      }
-      break
-    case 'synced_block':
-      if (blockObject.synced_block) {
-        let syncedFrom: SyncedFrom | null = null
-        if (
-          blockObject.synced_block.synced_from &&
-          blockObject.synced_block.synced_from.block_id
-        ) {
-          syncedFrom = {
-            BlockId: blockObject.synced_block.synced_from.block_id,
-          }
-        }
-
-        const syncedBlock: SyncedBlock = {
-          SyncedFrom: syncedFrom,
-        }
-        block.SyncedBlock = syncedBlock
-      }
-      break
-    case 'toggle':
-      if (blockObject.toggle) {
-        const toggle: Toggle = {
-          RichTexts: blockObject.toggle.rich_text.map(_buildRichText),
-          Color: blockObject.toggle.color,
-          Children: [],
-        }
-        block.Toggle = toggle
-      }
-      break
-    case 'embed':
-      if (blockObject.embed) {
-        const embed: Embed = {
-          Url: blockObject.embed.url,
-        }
-        block.Embed = embed
-      }
-      break
-    case 'bookmark':
-      if (blockObject.bookmark) {
-        const bookmark: Bookmark = {
-          Caption: blockObject.bookmark.caption?.map(_buildRichText) || [],
-          Url: blockObject.bookmark.url,
-        }
-        block.Bookmark = bookmark
-      }
-      break
-    case 'link_preview':
-      if (blockObject.link_preview) {
-        const linkPreview: LinkPreview = {
-          Url: blockObject.link_preview.url,
-        }
-        block.LinkPreview = linkPreview
-      }
-      break
-    case 'table':
-      if (blockObject.table) {
-        const table: Table = {
-          TableWidth: blockObject.table.table_width,
-          HasColumnHeader: blockObject.table.has_column_header,
-          HasRowHeader: blockObject.table.has_row_header,
-          Rows: [],
-        }
-        block.Table = table
-      }
-      break
-    case 'column_list':
-      const columnList: ColumnList = {
-        Columns: [],
-      }
-      block.ColumnList = columnList
-      break
-    case 'table_of_contents':
-      if (blockObject.table_of_contents) {
-        const tableOfContents: TableOfContents = {
-          Color: blockObject.table_of_contents.color,
-        }
-        block.TableOfContents = tableOfContents
-      }
-      break
-    case 'link_to_page':
-      if (blockObject.link_to_page && blockObject.link_to_page.page_id) {
-        const linkToPage: LinkToPage = {
-          Type: blockObject.link_to_page.type,
-          PageId: blockObject.link_to_page.page_id,
-        }
-        block.LinkToPage = linkToPage
-      }
-      break
+  const builder = blockBuilders[blockObject.type]
+  if (builder) {
+    await builder(blockObject, block)
   }
 
   return block

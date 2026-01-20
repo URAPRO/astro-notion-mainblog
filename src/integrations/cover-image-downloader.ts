@@ -1,5 +1,6 @@
 import type { AstroIntegration } from 'astro'
-import { getDatabase, downloadFile } from '../lib/notion/client'
+import { getDatabase } from '../lib/notion/client'
+import { executeDownload } from './shared/downloader-utils'
 
 export default (): AstroIntegration => ({
   name: 'cover-image-downloader',
@@ -8,18 +9,13 @@ export default (): AstroIntegration => ({
       const database = await getDatabase()
 
       if (!database.Cover || database.Cover.Type !== 'file') {
-        return Promise.resolve()
+        return
       }
 
-      let url!: URL
-      try {
-        url = new URL(database.Cover.Url)
-      } catch {
-        console.log('Invalid Cover image URL: ', database.Cover?.Url)
-        return Promise.resolve()
-      }
-
-      return downloadFile(url)
+      return executeDownload({
+        url: database.Cover.Url,
+        context: 'Cover image',
+      })
     },
   },
 })

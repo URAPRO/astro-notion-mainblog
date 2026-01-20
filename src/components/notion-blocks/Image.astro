@@ -1,7 +1,7 @@
 ---
 import { ENABLE_LIGHTBOX } from '../../server-constants.ts'
 import * as interfaces from '../../lib/interfaces'
-import { filePath } from '../../lib/blog-helpers'
+import { generateImagePaths, generateSrcset } from '../../lib/helpers/image-path'
 import Caption from './Caption.astro'
 
 export interface Props {
@@ -13,35 +13,17 @@ export interface Props {
 const { block } = Astro.props
 
 let imageSrc = ''
-let webpSrc = '' // Large: 800px
-let mediumSrc = '' // Medium: 400px
-let smallSrc = '' // Small: 200px
+let webpSrc = ''
+let srcsetValue = ''
 
 if (block.Image?.External?.Url) {
   imageSrc = block.Image.External.Url
 } else if (block.Image?.File?.Url) {
-  const originalPath = filePath(new URL(block.Image.File.Url))
-  imageSrc = originalPath
-
-  // 各サイズのWebPパスを生成
-  const pathParts = originalPath.split('.')
-  const ext = pathParts.pop()
-  const basePath = pathParts.join('.')
-
-  // WebPファイルのパス
-  webpSrc = `${basePath}.webp`
-  mediumSrc = `${basePath}-md.webp`
-  smallSrc = `${basePath}-sm.webp`
+  const paths = generateImagePaths(block.Image.File.Url)
+  imageSrc = paths.original
+  webpSrc = paths.webp
+  srcsetValue = generateSrcset(paths)
 }
-
-// srcset文字列を生成
-const srcsetValue = [smallSrc, mediumSrc, webpSrc]
-  .filter(Boolean)
-  .map((url, i) => {
-    const widths = [200, 400, 800]
-    return `${url} ${widths[i]}w`
-  })
-  .join(', ')
 
 // キャプションからの情報抽出
 let specifiedWidthString = ''

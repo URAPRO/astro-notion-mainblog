@@ -5,6 +5,7 @@ import {
   getDateStr,
   getStaticFilePath,
 } from '../lib/blog-helpers.ts'
+import { getPlatform, platformConfig, isNew } from '../lib/helpers/platform'
 import Layout from '../layouts/Layout.astro'
 import PostFeaturedImage from '../components/PostFeaturedImage.astro'
 import HeroSection from '../components/HeroSection.astro'
@@ -40,28 +41,6 @@ const rightPosts = allPosts
   .filter((post) => !featuredSlugs.includes(post.Slug))
   .slice(0, 8)
 
-// プラットフォームを判定するヘルパー
-const getPlatform = (post: (typeof allPosts)[0]) => {
-  if (!post.ExternalLink) return 'blog'
-  if (post.ExternalLink.includes('note.com')) return 'note'
-  if (post.ExternalLink.includes('zenn.dev')) return 'zenn'
-  return 'external'
-}
-
-const platformConfig = {
-  blog: { icon: '🏠', label: 'Blog', color: '#E07A3D' },
-  note: { icon: '✍️', label: 'note', color: '#41c9b4' },
-  zenn: { icon: '💻', label: 'Zenn', color: '#3EA8FF' },
-  external: { icon: '🔗', label: 'External', color: '#888' },
-}
-
-// 7日以内かどうかを判定
-const isNew = (date: string) => {
-  const postDate = new Date(date)
-  const now = new Date()
-  const diffDays = (now.getTime() - postDate.getTime()) / (1000 * 60 * 60 * 24)
-  return diffDays <= 7
-}
 ---
 
 <!-- WebSite スキーマ (構造化データ) -->
