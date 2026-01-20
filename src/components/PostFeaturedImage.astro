@@ -1,6 +1,7 @@
 ---
 import type { Post } from '../lib/interfaces.ts'
-import { filePath } from '../lib/blog-helpers'
+import { generateImagePaths, generateSrcset } from '../lib/helpers/image-path'
+
 export interface Props {
   post: Post
   enableLink: boolean
@@ -13,37 +14,19 @@ const { post, altText } = Astro.props
 const imageAltText = altText || post.Title || 'アイキャッチ画像'
 
 let imageUrl = ''
-let webpUrl = '' // Large: 800px
-let mediumUrl = '' // Medium: 400px
-let smallUrl = '' // Small: 200px
+let webpUrl = ''
+let srcsetValue = ''
 
 if (post.FeaturedImage && post.FeaturedImage.Url) {
   if (import.meta.env.DEV) {
     imageUrl = post.FeaturedImage.Url
   } else {
-    const originalPath = filePath(new URL(post.FeaturedImage.Url))
-    imageUrl = originalPath
-
-    // 各サイズのWebPパスを生成
-    const pathParts = originalPath.split('.')
-    const ext = pathParts.pop()
-    const basePath = pathParts.join('.')
-
-    // WebPファイルのパス（元がWebP以外の場合も含む）
-    webpUrl = `${basePath}.webp`
-    mediumUrl = `${basePath}-md.webp`
-    smallUrl = `${basePath}-sm.webp`
+    const paths = generateImagePaths(post.FeaturedImage.Url)
+    imageUrl = paths.original
+    webpUrl = paths.webp
+    srcsetValue = generateSrcset(paths)
   }
 }
-
-// srcset文字列を生成
-const srcsetValue = [smallUrl, mediumUrl, webpUrl]
-  .filter(Boolean)
-  .map((url, i) => {
-    const widths = [200, 400, 800]
-    return `${url} ${widths[i]}w`
-  })
-  .join(', ')
 ---
 
 {
