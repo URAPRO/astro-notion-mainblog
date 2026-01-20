@@ -38,7 +38,6 @@ const isDirectVideo = !isYouTube && videoSrc
         <iframe
           src={`https://www.youtube.com/embed/${parseYouTubeVideoId(url)}`}
           title="YouTube video player"
-          frameborder="0"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowfullscreen
         />
@@ -66,6 +65,7 @@ const isDirectVideo = !isYouTube && videoSrc
   }
   .video div:first-child iframe {
     height: 340px;
+    border: none;
   }
   @media (max-width: 640px) {
     .video div:first-child iframe {

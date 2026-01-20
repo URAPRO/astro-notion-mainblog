@@ -114,13 +114,16 @@ if (specifiedWidthString) {
   if (namedSizes[lowerSize]) {
     styleWidth = namedSizes[lowerSize]
     // 名前付きサイズの場合もHTML属性用に数値を計算
-    const numericMatch = namedSizes[lowerSize].match(/^(\d+)px$/)
-    if (numericMatch && originalWidth && originalHeight) {
-      finalWidth = parseInt(numericMatch[1], 10)
-      finalHeight = Math.round((originalHeight / originalWidth) * finalWidth)
-    } else if (originalWidth && originalHeight) {
-      finalWidth = originalWidth
-      finalHeight = originalHeight
+    if (originalWidth && originalHeight) {
+      const numericMatch = namedSizes[lowerSize].match(/^(\d+)px$/)
+      if (numericMatch) {
+        finalWidth = parseInt(numericMatch[1], 10)
+        finalHeight = Math.round((originalHeight / originalWidth) * finalWidth)
+      } else {
+        // 数値でない名前付きサイズの場合、元のサイズをフォールバック
+        finalWidth = originalWidth
+        finalHeight = originalHeight
+      }
     }
   } else if (originalWidth && originalHeight) {
     // 数値指定の場合
