@@ -58,15 +58,20 @@ const headings = blocks.filter((block) =>
   ['heading_1', 'heading_2', 'heading_3'].includes(block.Type)
 );
 
+// ブロックからファイル情報を取得するヘルパー関数
+const getFileDetailsFromBlock = (block: interfaces.Block) => {
+  return block.Image?.File || block.File?.File || block.Video?.File;
+};
+
 const fileAtacchedBlocks = extractTargetBlocks('image', blocks)
   .concat(extractTargetBlocks('file', blocks))
+  .concat(extractTargetBlocks('video', blocks))
   .filter((block) => {
     if (!block) {
       return false
     }
-    const imageOrFile = block.Image || block.File;
-    // Ensure File object and its Url exist
-    return imageOrFile && imageOrFile.File && imageOrFile.File.Url;
+    const fileDetails = getFileDetailsFromBlock(block);
+    return fileDetails && fileDetails.Url;
   });
 
 // Download files (skip in development for faster page loads)
@@ -74,12 +79,9 @@ if (!import.meta.env.DEV) {
   await Promise.all(
     fileAtacchedBlocks
       .map(async (block) => {
-        // Access File property safely
-        const fileDetails = block.Image?.File || block.File?.File;
+        const fileDetails = getFileDetailsFromBlock(block);
         if (!fileDetails || !fileDetails.ExpiryTime) {
-          // If ExpiryTime is not available, or fileDetails is undefined,
-          // it implies we might need to fetch the block again or handle as an error.
-          // For now, assume getBlock(block.Id) is the fallback.
+          // If ExpiryTime is not available, fetch the block again
           return getBlock(block.Id);
         }
         const expiryTime = fileDetails.ExpiryTime;
@@ -91,8 +93,7 @@ if (!import.meta.env.DEV) {
       .map((promise, index) =>
         promise.then((block) => {
           let url: URL;
-          // Access File property safely
-          const fileDetails = block.Image?.File || block.File?.File;
+          const fileDetails = getFileDetailsFromBlock(block);
           if (!fileDetails || !fileDetails.Url) {
             console.log('Invalid file URL after getBlock or from cache');
             return Promise.reject(new Error('Invalid file URL'));

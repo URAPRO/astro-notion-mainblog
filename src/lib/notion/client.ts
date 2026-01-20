@@ -425,6 +425,14 @@ export async function getAllTags(): Promise<SelectProperty[]> {
     )
 }
 
+// ファイル名をサニタイズしてPath Traversalを防止
+function sanitizeFileName(filename: string): string {
+  return filename
+    .replace(/\.\./g, '') // ディレクトリトラバーサルを除去
+    .replace(/[\/\\]/g, '') // パス区切り文字を除去
+    .replace(/[\x00-\x1f\x7f]/g, '') // 制御文字を除去
+}
+
 export async function downloadFile(url: URL, slug?: string, imageIndex?: number | string) {
   let res!: AxiosResponse
   try {
@@ -445,14 +453,18 @@ export async function downloadFile(url: URL, slug?: string, imageIndex?: number 
     return Promise.resolve()
   }
 
-  const dir = './public/notion/' + url.pathname.split('/').slice(-2)[0]
+  // ディレクトリ名をサニタイズ
+  const rawDirName = url.pathname.split('/').slice(-2)[0]
+  const safeDirName = sanitizeFileName(rawDirName)
+  const dir = './public/notion/' + safeDirName
   if (!fs.existsSync(dir)) {
     console.log(`Creating directory: ${dir}`)
     fs.mkdirSync(dir, { recursive: true })
   }
 
-  // 元のファイル名を取得
-  const originalFilename = decodeURIComponent(url.pathname.split('/').slice(-1)[0])
+  // 元のファイル名を取得しサニタイズ
+  const rawFilename = decodeURIComponent(url.pathname.split('/').slice(-1)[0])
+  const originalFilename = sanitizeFileName(rawFilename)
   // ファイル拡張子を取得
   const fileExtension = originalFilename.split('.').pop() || ''
 
@@ -736,6 +748,15 @@ async function _buildBlock(blockObject: responses.BlockObject): Promise<Block> {
           blockObject.video.external
         ) {
           video.External = { Url: blockObject.video.external.url }
+        } else if (
+          blockObject.video.type === 'file' &&
+          blockObject.video.file
+        ) {
+          video.File = {
+            Type: blockObject.video.type,
+            Url: blockObject.video.file.url,
+            ExpiryTime: blockObject.video.file.expiry_time,
+          }
         }
         block.Video = video
       }
