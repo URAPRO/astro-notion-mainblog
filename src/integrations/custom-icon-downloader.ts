@@ -1,6 +1,7 @@
 import type { AstroIntegration } from 'astro'
 import type { FileObject } from '../lib/interfaces'
-import { getDatabase, downloadFile } from '../lib/notion/client'
+import { getDatabase } from '../lib/notion/client'
+import { executeDownload } from './shared/downloader-utils'
 
 export default (): AstroIntegration => ({
   name: 'custom-icon-downloader',
@@ -9,20 +10,17 @@ export default (): AstroIntegration => ({
       const database = await getDatabase()
 
       if (!database.Icon || database.Icon.Type !== 'file') {
-        return Promise.resolve()
+        return
       }
 
       const icon = database.Icon as FileObject
 
-      let url!: URL
-      try {
-        url = new URL(icon.Url)
-      } catch {
-        console.log('Invalid Icon image URL: ', icon?.Url)
-        return Promise.resolve()
-      }
-
-      return downloadFile(url, 'site', 'icon')
+      return executeDownload({
+        url: icon.Url,
+        slug: 'site',
+        type: 'icon',
+        context: 'Icon image',
+      })
     },
   },
 })
