@@ -8,6 +8,12 @@ type BuildRssOptions = {
   titleSuffix?: string
 }
 
+// サイト内記事のみのRSSオプション（外部リンク記事を除外）
+export const siteOnlyRssOptions: BuildRssOptions = {
+  filter: (post) => !post.ExternalLink,
+  titleSuffix: ' (サイト内のみ)',
+}
+
 export async function buildRssResponse(options: BuildRssOptions = {}) {
   const [posts, database] = await Promise.all([getAllPosts(), getDatabase()])
 
