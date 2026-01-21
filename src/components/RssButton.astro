@@ -1,0 +1,32 @@
+---
+import { Icon } from 'astro-icon/components'
+import { getNavLink } from '../lib/blog-helpers.ts'
+---
+
+<a href={getNavLink('/rss')} class="rss-button" title="RSS" target="_blank" rel="noopener noreferrer">
+  <Icon name="octicon:rss-24" />
+</a>
+
+<style>
+  .rss-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+    border: none;
+    border-radius: var(--radius);
+    padding: 0.4rem;
+    color: #777;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+  .rss-button:hover {
+    cursor: pointer;
+    background-color: #ddd;
+    color: #e07a3d;
+  }
+  .rss-button svg {
+    width: 20px;
+    height: 20px;
+  }
+</style>

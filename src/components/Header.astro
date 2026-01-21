@@ -2,6 +2,7 @@
 import { getDatabase } from '../lib/notion/client.ts'
 import { getNavLink, filePath } from '../lib/blog-helpers.ts'
 import SearchButton from './SearchButton.astro'
+import RssButton from './RssButton.astro'
 
 const database = await getDatabase()
 
@@ -53,6 +54,7 @@ const currentPath = Astro.url.pathname
     </nav>
 
     <div class="header-actions">
+      <RssButton />
       <SearchButton />
     </div>
   </div>
