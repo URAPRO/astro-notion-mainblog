@@ -248,6 +248,9 @@ const rightPosts = allPosts
 
         {/* 右側: 全プラットフォーム混合リスト（サムネイル付き） */}
         <div class="list-column">
+          <div class="list-header">
+            <span class="list-header-title">More</span>
+          </div>
           <ul class="posts-list">
             {
               rightPosts.map((post) => {
@@ -268,14 +271,16 @@ const rightPosts = allPosts
                       </span>
                       <span class="post-item-title">{post.Title}</span>
                       <span class="post-item-meta">
-                        {isNew(post.Date) && (
-                          <span class="new-badge-small">NEW</span>
-                        )}
-                        <span
-                          class="post-item-platform"
-                          style={`--platform-color: ${config.color}`}
-                        >
-                          {config.label}
+                        <span class="post-item-badges">
+                          {isNew(post.Date) && (
+                            <span class="new-badge-small">NEW</span>
+                          )}
+                          <span
+                            class="post-item-platform"
+                            style={`--platform-color: ${config.color}`}
+                          >
+                            {config.label}
+                          </span>
                         </span>
                         <span class="post-item-date">
                           {getDateStr(post.Date)}
@@ -686,6 +691,39 @@ const rightPosts = allPosts
     white-space: nowrap;
   }
 
+  /* バッジ横並びラッパー */
+  .post-item-badges {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  /* 一覧ヘッダー */
+  .list-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--hover-bg);
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .list-header::before {
+    content: '';
+    width: 3px;
+    height: 1em;
+    background: linear-gradient(180deg, var(--accents-1) 0%, #d4693a 100%);
+    border-radius: 1px;
+  }
+
+  .list-header-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--accents-2);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+
   /* もっと見るボタン */
   .see-more-wrapper {
     margin-top: 2rem;
@@ -887,6 +925,15 @@ const rightPosts = allPosts
     .post-item-thumb {
       width: 88px;
       height: 50px;
+    }
+
+    /* 一覧ヘッダーのモバイル調整 */
+    .list-header {
+      padding: 0.4rem 0.6rem;
+    }
+
+    .list-header-title {
+      font-size: 0.7rem;
     }
   }
 </style>
