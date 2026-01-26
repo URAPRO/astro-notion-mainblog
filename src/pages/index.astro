@@ -248,7 +248,7 @@ const rightPosts = allPosts
 
         {/* 右側: 全プラットフォーム混合リスト（サムネイル付き） */}
         <div class="list-column">
-          <div class="list-header">
+          <div class="list-header" role="heading" aria-level="3">
             <span class="list-header-title">More</span>
           </div>
           <ul class="posts-list">
@@ -712,7 +712,7 @@ const rightPosts = allPosts
     content: '';
     width: 3px;
     height: 1em;
-    background: linear-gradient(180deg, var(--accents-1) 0%, #d4693a 100%);
+    background: linear-gradient(180deg, var(--accents-1) 0%, var(--accents-1-dark, #d4693a) 100%);
     border-radius: 1px;
   }
 
